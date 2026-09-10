@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: aces-quiz-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: TRUST_PROXY
+        value: "1"
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ADMIN_SECRET
+        sync: false
+      - key: JWT_STUDENT_SECRET
+        sync: false
+      - key: JWT_ADMIN_EXPIRES_IN
+        value: 8h
+      - key: JWT_STUDENT_EXPIRES_IN
+        value: 3h
+      - key: SEED_ADMIN_USERNAME
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "5"
+
+  - type: web
+    name: aces-quiz-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_SOCKET_URL
+        sync: false
