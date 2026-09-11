@@ -14,6 +14,7 @@ export default function QuizAttempt() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const savingRef = useRef(new Set());
+  const violationRef = useRef(false);
 
   const token = localStorage.getItem('aces_student_token');
 
@@ -70,6 +71,21 @@ export default function QuizAttempt() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt, submitting]);
 
+  useEffect(() => {
+    if (!attempt || submitting) return;
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden' && !violationRef.current) {
+        violationRef.current = true;
+        handleSubmit(true, 'Your quiz was submitted because the exam page was left.');
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt, submitting]);
+
   const saveAnswer = useCallback(async (questionId, position) => {
     if (savingRef.current.has(questionId)) return;
     savingRef.current.add(questionId);
@@ -93,11 +109,11 @@ export default function QuizAttempt() {
     });
   }
 
-  async function handleSubmit(auto = false) {
+  async function handleSubmit(auto = false, reason = '') {
     if (submitting) return;
     if (!auto && !window.confirm('Submit your quiz now? You cannot change answers after submitting.')) return;
     setSubmitting(true);
-    setError('');
+    setError(reason);
     try {
       const res = await api.post('/quiz/submit');
       localStorage.setItem('aces_result', JSON.stringify(res.data));

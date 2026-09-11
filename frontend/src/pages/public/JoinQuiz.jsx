@@ -78,6 +78,14 @@ export default function JoinQuiz() {
               Fill in your details and the exam code provided by your coordinator.
             </p>
 
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              <p className="font-semibold">One attempt only</p>
+              <p className="mt-1 text-xs leading-5">
+                Each student can access this round only once. After starting, submitting, or leaving the quiz, you cannot
+                start it again.
+              </p>
+            </div>
+
             {error && (
               <div className="mt-4">
                 <ErrorBanner message={error} />

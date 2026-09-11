@@ -130,6 +130,21 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-amber-100 text-amber-700" aria-hidden="true">
+              !
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-amber-900">Important exam rule</h2>
+              <p className="mt-1 text-sm leading-6 text-amber-800">
+                Stay on the quiz screen throughout the exam. Switching tabs, minimizing the browser, or attempting any
+                unfair activity will automatically submit your quiz, and you will not be able to continue.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* CTA */}
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
