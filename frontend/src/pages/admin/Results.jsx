@@ -12,7 +12,8 @@ const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
   { value: 'in_progress', label: 'In progress' },
   { value: 'completed', label: 'Completed' },
-  { value: 'expired', label: 'Expired' }
+  { value: 'expired', label: 'Expired' },
+  { value: 'disqualified', label: 'Disqualified' }
 ];
 
 export default function Results() {
@@ -134,6 +135,7 @@ export default function Results() {
                   <th className="px-4 py-2.5 font-medium">Student</th>
                   <th className="px-4 py-2.5 font-medium">Department</th>
                   <th className="px-4 py-2.5 font-medium">Status</th>
+                  <th className="px-4 py-2.5 font-medium">Flags</th>
                   <th className="px-4 py-2.5 font-medium">Score</th>
                   <th className="px-4 py-2.5 font-medium">Time</th>
                   <th className="px-4 py-2.5 font-medium">Submitted</th>
@@ -160,6 +162,13 @@ export default function Results() {
                     <td className="px-4 py-3 text-slate-600">{row.department}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={row.status} />
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {row.violationCount > 0 ? (
+                        <span className="font-semibold text-red-600">{row.violationCount} violation</span>
+                      ) : (
+                        <span className="text-slate-400">None</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono font-semibold text-brand-700">{row.score}</span>
@@ -222,6 +231,13 @@ export default function Results() {
                 primary={formatSeconds(detail.timeTakenSeconds)}
               />
             </div>
+
+            {detail.status === 'disqualified' && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <p className="font-semibold">Disqualified attempt</p>
+                <p className="mt-1">Reason: {detail.violationReason || 'Exam rule violation'}</p>
+              </div>
+            )}
 
             {/* Question review */}
             <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
@@ -314,6 +330,8 @@ function QuestionReview({ index, question: q }) {
           </span>
           {q.questionText}
         </p>
+        <div className="flex flex-none items-center gap-2">
+          {q.flagged && <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Flagged</span>}
         <span
           className={`inline-flex flex-none items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${
             correct
@@ -337,6 +355,7 @@ function QuestionReview({ index, question: q }) {
             </>
           )}
         </span>
+        </div>
       </div>
 
       {/* Options */}

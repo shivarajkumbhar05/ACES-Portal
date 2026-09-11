@@ -42,6 +42,7 @@ async function buildStudentQuestionView(attempt) {
         options, // array of 4 strings in display order, position = index
         marks: aq.marks,
         selectedPosition: aq.selectedPosition,
+        flagged: aq.flagged === true,
         answered: aq.selectedPosition !== null && aq.selectedPosition !== undefined
       };
     });
@@ -271,6 +272,25 @@ router.post(
   })
 );
 
+/** POST /api/quiz/flag - mark or unmark a question for review. */
+router.post(
+  '/flag',
+  answerSubmitLimiter,
+  requireStudentAttempt,
+  asyncHandler(async (req, res) => {
+    const { attempt } = req;
+    const { questionId, flagged } = req.body;
+    if (attempt.status !== ATTEMPT_STATUS.IN_PROGRESS) return res.status(409).json({ error: 'This attempt has already been submitted' });
+    if (!isValidObjectId(questionId) || typeof flagged !== 'boolean') return res.status(400).json({ error: 'Invalid question flag' });
+    const result = await Attempt.updateOne(
+      { _id: attempt._id, status: ATTEMPT_STATUS.IN_PROGRESS, 'questions.question': questionId },
+      { $set: { 'questions.$.flagged': flagged } }
+    );
+    if (!result.matchedCount) return res.status(404).json({ error: 'Question does not belong to this attempt' });
+    res.json({ ok: true, questionId, flagged });
+  })
+);
+
 /** POST /api/quiz/submit - server-side scoring, no trust in client-provided scores. */
 router.post(
   '/submit',
@@ -278,6 +298,7 @@ router.post(
   requireStudentAttempt,
   asyncHandler(async (req, res) => {
     const { attempt } = req;
+    const { violationReason } = req.body || {};
     if (attempt.status !== ATTEMPT_STATUS.IN_PROGRESS) {
       return res.status(409).json({ error: 'This attempt has already been submitted' });
     }
@@ -291,6 +312,12 @@ router.post(
     attempt.submittedAt = now;
     attempt.status = new Date() > new Date(attempt.deadlineAt) ? ATTEMPT_STATUS.EXPIRED : ATTEMPT_STATUS.COMPLETED;
     if (attempt.status === ATTEMPT_STATUS.EXPIRED) attempt.status = ATTEMPT_STATUS.COMPLETED; // still scored, just flagged via timeTaken
+    if (violationReason) {
+      attempt.status = ATTEMPT_STATUS.DISQUALIFIED;
+      attempt.violationCount += 1;
+      attempt.violationReason = violationReason;
+      attempt.violationAt = now;
+    }
 
     await finalizeAttemptScore(attempt, round);
     await attempt.save();
@@ -314,6 +341,8 @@ router.post(
       correctAnswers: attempt.correctAnswers,
       wrongAnswers: attempt.wrongAnswers,
       unanswered: attempt.unanswered,
+      status: attempt.status,
+      violationReason: attempt.violationReason,
       score: round.showScoreToStudent ? attempt.score : null,
       maxScore: round.showScoreToStudent ? attempt.maxScore : null,
       percentage: round.showScoreToStudent ? attempt.percentage : null,
@@ -349,6 +378,8 @@ router.get(
       correctAnswers: attempt.correctAnswers,
       wrongAnswers: attempt.wrongAnswers,
       unanswered: attempt.unanswered,
+      status: attempt.status,
+      violationReason: attempt.violationReason,
       score: round.showScoreToStudent ? attempt.score : null,
       maxScore: round.showScoreToStudent ? attempt.maxScore : null,
       percentage: round.showScoreToStudent ? attempt.percentage : null,

@@ -14,7 +14,8 @@ const ROUND_STATUS = {
 const ATTEMPT_STATUS = {
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',
-  EXPIRED: 'expired'
+  EXPIRED: 'expired',
+  DISQUALIFIED: 'disqualified'
 };
 
 const ADMIN_ROLES = {

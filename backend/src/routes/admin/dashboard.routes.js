@@ -19,6 +19,7 @@ router.get(
     const totalParticipants = await Attempt.countDocuments({ roundNumber });
     const completed = await Attempt.countDocuments({ roundNumber, status: ATTEMPT_STATUS.COMPLETED });
     const inProgress = await Attempt.countDocuments({ roundNumber, status: ATTEMPT_STATUS.IN_PROGRESS });
+    const disqualified = await Attempt.countDocuments({ roundNumber, status: ATTEMPT_STATUS.DISQUALIFIED });
 
     const questionBankSize = round ? await Question.countDocuments({ round: round._id }) : 0;
 
@@ -34,6 +35,7 @@ router.get(
       totalParticipants,
       completed,
       inProgress,
+      disqualified,
       notStarted,
       totalQuestions: round ? round.questionsPerQuiz : 0,
       questionBankSize,
@@ -41,6 +43,29 @@ router.get(
       maxPossibleScore: scoreAgg[0]?.maxScore ?? 0,
       averageScore: scoreAgg[0] ? Math.round(scoreAgg[0].avgScore * 100) / 100 : 0
     });
+  })
+);
+
+router.get(
+  '/active',
+  asyncHandler(async (req, res) => {
+    const roundNumber = Number(req.query.round) || 1;
+    const attempts = await Attempt.find({ roundNumber, status: ATTEMPT_STATUS.IN_PROGRESS })
+      .populate('student', 'name rollNumber')
+      .populate('department', 'name')
+      .sort({ startedAt: 1 })
+      .limit(100)
+      .lean();
+
+    res.json(attempts.map((a) => ({
+      attemptId: a._id,
+      studentName: a.student?.name,
+      rollNumber: a.student?.rollNumber,
+      department: a.department?.name,
+      startedAt: a.startedAt,
+      deadlineAt: a.deadlineAt,
+      violationCount: a.violationCount || 0
+    })));
   })
 );
 

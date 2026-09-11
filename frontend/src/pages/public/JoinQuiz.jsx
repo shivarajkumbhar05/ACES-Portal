@@ -8,6 +8,7 @@ export default function JoinQuiz() {
   const [departments, setDepartments] = useState([]);
   const [loadingDepts, setLoadingDepts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     name: '',
@@ -174,9 +175,19 @@ export default function JoinQuiz() {
                 />
               </div>
 
+              <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span>I understand this is my only attempt and that leaving the quiz screen will disqualify my attempt.</span>
+              </label>
+
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !confirmed}
                 className="btn-primary group mt-2 inline-flex w-full items-center justify-center gap-2 py-2.5 shadow-lg shadow-brand-500/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-500/30 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
               >
                 {submitting ? (

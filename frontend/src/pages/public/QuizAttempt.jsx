@@ -10,11 +10,14 @@ export default function QuizAttempt() {
   const [questions, setQuestions] = useState([]);
   const [current, setCurrent] = useState(0);
   const [remaining, setRemaining] = useState(0);
+  const [timeNotice, setTimeNotice] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const savingRef = useRef(new Set());
   const violationRef = useRef(false);
+  const fullscreenEnteredRef = useRef(false);
 
   const token = localStorage.getItem('aces_student_token');
 
@@ -72,12 +75,17 @@ export default function QuizAttempt() {
   }, [attempt, submitting]);
 
   useEffect(() => {
+    if (remaining === 300) setTimeNotice('Five minutes remaining. Please review your answers.');
+    if (remaining === 60) setTimeNotice('One minute remaining. Submit your quiz soon.');
+  }, [remaining]);
+
+  useEffect(() => {
     if (!attempt || submitting) return;
 
     function handleVisibilityChange() {
       if (document.visibilityState === 'hidden' && !violationRef.current) {
         violationRef.current = true;
-        handleSubmit(true, 'Your quiz was submitted because the exam page was left.');
+        handleSubmit(true, 'tab_switch');
       }
     }
 
@@ -85,6 +93,20 @@ export default function QuizAttempt() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt, submitting]);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+      if (fullscreenEnteredRef.current && !active && !violationRef.current) {
+        violationRef.current = true;
+        handleSubmit(true, 'fullscreen_exit');
+      }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitting]);
 
   const saveAnswer = useCallback(async (questionId, position) => {
     if (savingRef.current.has(questionId)) return;
@@ -107,6 +129,22 @@ export default function QuizAttempt() {
       saveAnswer(q.questionId, position);
       return next;
     });
+  }
+
+  function toggleFlag(qIndex) {
+    const question = questions[qIndex];
+    const flagged = !question.flagged;
+    setQuestions((prev) => prev.map((item, index) => (index === qIndex ? { ...item, flagged } : item)));
+    api.post('/quiz/flag', { questionId: question.questionId, flagged }).catch(() => {});
+  }
+
+  async function enterFullscreen() {
+    try {
+      await document.documentElement.requestFullscreen();
+      fullscreenEnteredRef.current = true;
+    } catch {
+      setError('Fullscreen mode could not be enabled. Please allow it before continuing.');
+    }
   }
 
   async function handleSubmit(auto = false, reason = '') {
@@ -145,7 +183,7 @@ export default function QuizAttempt() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <div className="sticky top-0 z-10 mb-4 flex items-center justify-between rounded-xl bg-white/90 px-4 py-3 shadow-sm backdrop-blur">
+      <div className="sticky top-0 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/90 px-4 py-3 shadow-sm backdrop-blur">
         <div>
           <p className="text-xs text-slate-400">Round {attempt.roundNumber}</p>
           <p className="text-sm font-semibold text-slate-700">
@@ -155,7 +193,18 @@ export default function QuizAttempt() {
         <div className={`rounded-lg px-3 py-1.5 text-lg font-bold tabular-nums ${urgent ? 'bg-red-100 text-red-600' : 'bg-brand-50 text-brand-700'}`}>
           {formatSeconds(remaining)}
         </div>
+        {!isFullscreen && (
+          <button type="button" onClick={enterFullscreen} className="btn-secondary px-3 py-1.5 text-xs">
+            Enter fullscreen
+          </button>
+        )}
       </div>
+
+      {timeNotice && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {timeNotice}
+        </div>
+      )}
 
       {error && (
         <div className="mb-4">
@@ -168,6 +217,14 @@ export default function QuizAttempt() {
           Question {current + 1} of {questions.length} · {q.marks} mark{q.marks === 1 ? '' : 's'}
         </p>
         <h2 className="mt-2 text-lg font-semibold text-slate-900">{q.questionText}</h2>
+
+        <button
+          type="button"
+          onClick={() => toggleFlag(current)}
+          className={`mt-3 text-xs font-medium ${q.flagged ? 'text-amber-700' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          {q.flagged ? 'Flagged for review' : 'Flag question for review'}
+        </button>
 
         <div className="mt-5 space-y-3">
           {q.options.map((opt, i) => (
@@ -225,7 +282,7 @@ export default function QuizAttempt() {
                 : 'bg-slate-100 text-slate-500'
             }`}
           >
-            {i + 1}
+            {qq.flagged ? `${i + 1} *` : i + 1}
           </button>
         ))}
       </div>

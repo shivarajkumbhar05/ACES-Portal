@@ -58,6 +58,9 @@ router.get(
       Correct: a.correctAnswers,
       Wrong: a.wrongAnswers,
       Unanswered: a.unanswered,
+      Status: a.status,
+      'Violation Count': a.violationCount || 0,
+      'Violation Reason': a.violationReason || '',
       'Time Taken (s)': a.timeTakenSeconds,
       'Submitted At': a.submittedAt
     }));
@@ -82,6 +85,9 @@ router.get(
       'Roll Number': a.student?.rollNumber,
       Score: a.score,
       Percentage: a.percentage,
+      Status: a.status,
+      'Violation Count': a.violationCount || 0,
+      'Violation Reason': a.violationReason || '',
       'Time Taken (s)': a.timeTakenSeconds
     }));
 
@@ -132,6 +138,9 @@ router.get(
       Department: a.department?.name,
       Score: a.score,
       Percentage: a.percentage,
+      Status: a.status,
+      'Violation Count': a.violationCount || 0,
+      'Violation Reason': a.violationReason || '',
       'Time Taken (s)': a.timeTakenSeconds
     }));
 

@@ -14,6 +14,7 @@ const attemptQuestionSchema = new Schema(
     marks: { type: Number, required: true },
 
     selectedPosition: { type: Number, default: null }, // 0-3, index into optionOrder
+    flagged: { type: Boolean, default: false },
     isCorrect: { type: Boolean, default: null },
     answeredAt: { type: Date, default: null }
   },
@@ -51,7 +52,10 @@ const attemptSchema = new Schema(
     percentage: { type: Number, default: 0 },
 
     ipAddress: { type: String },
-    userAgent: { type: String }
+    userAgent: { type: String },
+    violationCount: { type: Number, default: 0 },
+    violationReason: { type: String, default: null },
+    violationAt: { type: Date, default: null }
   },
   { timestamps: true }
 );

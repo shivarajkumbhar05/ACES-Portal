@@ -39,17 +39,24 @@ export default function QuizResult() {
   if (!result) return null;
 
   const scoreKnown = result.score !== null && result.score !== undefined;
+  const disqualified = result.status === 'disqualified';
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10">
       <div className="card p-6 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Round {result.roundNumber} Complete</p>
+        <p className={`text-xs font-semibold uppercase tracking-wide ${disqualified ? 'text-red-600' : 'text-brand-600'}`}>
+          {disqualified ? 'Attempt Disqualified' : `Round ${result.roundNumber} Complete`}
+        </p>
         <h1 className="mt-1 text-xl font-bold text-slate-900">Thank you, {result.student?.name}!</h1>
         <p className="text-sm text-slate-500">
           {result.student?.rollNumber} · {result.student?.department}
         </p>
 
-        {scoreKnown ? (
+        {disqualified ? (
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+            This attempt was ended because the exam rules were violated. You cannot start this round again.
+          </div>
+        ) : scoreKnown ? (
           <div className="mt-6 inline-flex flex-col items-center rounded-2xl bg-brand-50 px-8 py-5">
             <p className="text-4xl font-extrabold text-brand-700">
               {result.score}

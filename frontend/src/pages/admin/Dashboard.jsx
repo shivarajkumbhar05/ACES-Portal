@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [department, setDepartment] = useState('');
   const [stats, setStats] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [activeAttempts, setActiveAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [live, setLive] = useState(false);
@@ -25,11 +26,13 @@ export default function Dashboard() {
     setError('');
     Promise.all([
       api.get('/admin/dashboard/stats', { params: { round } }),
-      api.get('/admin/dashboard/leaderboard', { params: { round, department: department || undefined } })
+      api.get('/admin/dashboard/leaderboard', { params: { round, department: department || undefined } }),
+      api.get('/admin/dashboard/active', { params: { round } })
     ])
-      .then(([statsRes, lbRes]) => {
+      .then(([statsRes, lbRes, activeRes]) => {
         setStats(statsRes.data);
         setLeaderboard(lbRes.data);
+        setActiveAttempts(activeRes.data);
       })
       .catch(() => setError('Could not load dashboard data.'))
       .finally(() => setLoading(false));
@@ -102,10 +105,11 @@ export default function Dashboard() {
           {stats && (
             <div className="space-y-4">
               {/* Primary KPIs */}
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
                 <StatCard label="Participants" value={stats.totalParticipants} accent="brand" />
                 <StatCard label="Completed" value={stats.completed} accent="green" />
                 <StatCard label="In Progress" value={stats.inProgress} accent="amber" />
+                <StatCard label="Disqualified" value={stats.disqualified} accent="red" />
                 <StatCard label="Not Started" value={stats.notStarted} accent="slate" />
               </div>
 
@@ -124,6 +128,38 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          <div className="card overflow-hidden ring-1 ring-slate-900/5">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-700">Active attempts</h2>
+                <p className="text-xs text-slate-400">Students currently taking Round {round}</p>
+              </div>
+              <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700">
+                {activeAttempts.length} active
+              </span>
+            </div>
+            {activeAttempts.length === 0 ? (
+              <p className="px-5 py-6 text-sm text-slate-400">No active attempts right now.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {activeAttempts.map((row) => (
+                      <tr key={row.attemptId} className="border-t border-slate-100">
+                        <td className="px-5 py-3 font-medium text-slate-800">{row.studentName}</td>
+                        <td className="px-5 py-3 text-xs text-slate-500">{row.rollNumber}</td>
+                        <td className="px-5 py-3 text-slate-600">{row.department}</td>
+                        <td className="px-5 py-3 text-right text-xs text-slate-400">
+                          {row.violationCount ? `${row.violationCount} violation` : 'No violations'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           {/* ── Leaderboard ──────────────────────────── */}
           <div className="card overflow-hidden ring-1 ring-slate-900/5">

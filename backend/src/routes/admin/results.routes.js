@@ -49,6 +49,8 @@ router.get(
       correct: a.correctAnswers,
       wrong: a.wrongAnswers,
       unanswered: a.unanswered,
+      violationCount: a.violationCount || 0,
+      violationReason: a.violationReason,
       timeTakenSeconds: a.timeTakenSeconds,
       submittedAt: a.submittedAt
     }));
@@ -85,7 +87,8 @@ router.get(
           selectedAnswer: selectedKey,
           correctAnswer: master?.correctAnswer,
           isCorrect: aq.isCorrect,
-          marks: aq.marks
+          marks: aq.marks,
+          flagged: aq.flagged === true
         };
       });
 
@@ -94,6 +97,9 @@ router.get(
       department: attempt.department?.name,
       roundNumber: attempt.roundNumber,
       status: attempt.status,
+      violationCount: attempt.violationCount || 0,
+      violationReason: attempt.violationReason,
+      violationAt: attempt.violationAt,
       startedAt: attempt.startedAt,
       submittedAt: attempt.submittedAt,
       timeTakenSeconds: attempt.timeTakenSeconds,
