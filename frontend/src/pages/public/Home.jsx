@@ -143,6 +143,10 @@ export default function Home() {
             Admin Login
           </Link>
         </div>
+
+        <footer className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-400">
+          Developed by ShivRj Shrishail Kumbhar
+        </footer>
       </div>
     </div>
   );
