@@ -33,7 +33,7 @@ router.get('/institution', (req, res) => {
     venue: 'Computer Engineering Department, Lab No. 3, Ground Floor',
     committee: {
       president: { title: 'President, ACES Committee 2026-27', name: 'Mr.Kumbhar.S.S' },
-      coordinator: { title: 'Co-ordinator', name: 'Mr.Nigadale.G.A' },
+      coordinator: { title: 'Co-Ordinator', name: 'Mr.Nigadale.G.A' },
       hod: { title: 'HOD, Computer Engineering Department', name: 'Mr.Gaikwad.S.T' },
       principal: { title: 'Principal', name: 'Mr.Jeure.N.B' }
     }
