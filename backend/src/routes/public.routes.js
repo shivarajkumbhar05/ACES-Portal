@@ -32,10 +32,10 @@ router.get('/institution', (req, res) => {
     time: '10:00 AM - 12:00 PM',
     venue: 'Computer Engineering Department, Lab No. 3, Ground Floor',
     committee: {
-      president: { title: 'President, ACES Committee 2026-27', name: 'Mr.Kumbhar.S.S' },
-      coordinator: { title: 'Co-Ordinator', name: 'Mr.Nigadale.G.A' },
+      principal: { title: 'Principal', name: 'Mr.Jeure.N.B' },
       hod: { title: 'HOD, Computer Engineering Department', name: 'Mr.Gaikwad.S.T' },
-      principal: { title: 'Principal', name: 'Mr.Jeure.N.B' }
+      coordinator: { title: 'Co-Ordinator', name: 'Mr.Nigadale.G.A' },
+      president: { title: 'President, ACES Committee 2026-27', name: 'Mr.Kumbhar.S.S' }
     }
   });
 });
