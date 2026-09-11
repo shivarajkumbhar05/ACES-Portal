@@ -131,13 +131,16 @@ export default function Home() {
         </div>
 
         {/* CTA */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             to="/quiz/join"
             className="btn-primary group inline-flex items-center gap-2 px-8 py-3 text-base shadow-lg shadow-brand-500/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-500/30"
           >
             Enter the Quiz
             <span className="transition-transform group-hover:translate-x-0.5">→</span>
+          </Link>
+          <Link to="/admin/login" className="btn-secondary px-6 py-3 text-base">
+            Admin Login
           </Link>
         </div>
       </div>
