@@ -1,0 +1,19 @@
+import { useEffect, useState } from 'react';
+import api, { apiErrorMessage } from '../../api/client';
+import { ErrorBanner, Loader } from '../../components/common/UI';
+
+export default function AttendanceAllocation() {
+  const [data, setData] = useState(null);
+  const [competitionId, setCompetitionId] = useState('');
+  const [volunteerId, setVolunteerId] = useState('');
+  const [selected, setSelected] = useState([]);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  function load() { api.get('/admin/attendance/options').then((res) => { setData(res.data); setCompetitionId(res.data.competitions[0]?._id || ''); setVolunteerId(res.data.volunteers[0]?._id || ''); }).catch((err) => setError(apiErrorMessage(err))); }
+  useEffect(load, []);
+  async function assign(event) { event.preventDefault(); setError(''); try { await api.put('/admin/attendance/assignments', { competitionId, volunteerId, studentIds: selected }); setSelected([]); setMessage('Attendance students allocated.'); } catch (err) { setError(apiErrorMessage(err)); } }
+  async function download() { try { const response = await api.get(`/admin/attendance/download${competitionId ? `?competition=${competitionId}` : ''}`, { responseType: 'blob' }); const url = URL.createObjectURL(response.data); const link = document.createElement('a'); link.href = url; link.download = 'attendance_assignments.csv'; link.click(); URL.revokeObjectURL(url); } catch (err) { setError(apiErrorMessage(err)); } }
+  if (!data) return <Loader label="Loading allocation options…" />;
+  return <section className="space-y-6"><header><p className="text-xs font-semibold uppercase tracking-wider text-brand-600">Attendance setup</p><h1 className="mt-1 text-2xl font-bold text-slate-900">Allocate attendance students</h1><p className="mt-1 text-sm text-slate-500">Assign selected students to a volunteer for each competition.</p></header>{error && <ErrorBanner message={error} />}{message && <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p>}<form onSubmit={assign} className="card space-y-4 p-6"><div className="grid gap-4 md:grid-cols-2"><label><span className="label">Competition</span><select className="input" value={competitionId} onChange={(e) => setCompetitionId(e.target.value)}>{data.competitions.map((item) => <option key={item._id} value={item._id}>{item.name} · {item.type}</option>)}</select></label><label><span className="label">Volunteer</span><select className="input" value={volunteerId} onChange={(e) => setVolunteerId(e.target.value)}>{data.volunteers.map((item) => <option key={item._id} value={item._id}>{item.name} (@{item.username})</option>)}</select></label></div><div className="max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">{data.students.map((student) => <label key={student._id} className="flex items-center gap-3 px-4 py-3"><input type="checkbox" checked={selected.includes(student._id)} onChange={(e) => setSelected(e.target.checked ? [...selected, student._id] : selected.filter((id) => id !== student._id))} /><span><span className="block text-sm font-medium text-slate-800">{student.name}</span><span className="text-xs text-slate-500">{student.rollNumber} · {student.department?.name}</span></span></label>)}</div><button className="btn-primary" disabled={!selected.length}>Assign selected students</button></form><button className="btn-secondary" onClick={download}>Download attendance CSV</button></section>;
+}

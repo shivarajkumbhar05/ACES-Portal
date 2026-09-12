@@ -6,7 +6,7 @@ function emptyFormFor(roundNumber, existing) {
   if (existing) {
     return {
       name: existing.name,
-      type: existing.type || (roundNumber === 2 ? 'rapid_fire' : roundNumber === 3 ? 'questioning' : 'quiz'),
+      type: 'quiz',
       questionsPerQuiz: existing.questionsPerQuiz,
       timeLimitMinutes: existing.timeLimitMinutes,
       marksPerQuestion: existing.marksPerQuestion,
@@ -24,7 +24,7 @@ function emptyFormFor(roundNumber, existing) {
   }
   return {
     name: `Round ${roundNumber}`,
-    type: roundNumber === 2 ? 'rapid_fire' : roundNumber === 3 ? 'questioning' : 'quiz',
+    type: 'quiz',
     questionsPerQuiz: 30,
     timeLimitMinutes: 30,
     marksPerQuestion: 1,
@@ -441,8 +441,6 @@ export default function Rounds() {
   if (error) return <ErrorBanner message={error} onRetry={load} />;
 
   const round1 = rounds?.find((r) => r.roundNumber === 1) || null;
-  const round2 = rounds?.find((r) => r.roundNumber === 2) || null;
-  const round3 = rounds?.find((r) => r.roundNumber === 3) || null;
 
   return (
     <div className="space-y-6">
@@ -456,8 +454,6 @@ export default function Rounds() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <RoundCard roundNumber={1} initial={round1} onSaved={load} />
-        <RoundCard roundNumber={2} initial={round2} onSaved={load} />
-        <RoundCard roundNumber={3} initial={round3} onSaved={load} />
       </div>
     </div>
   );

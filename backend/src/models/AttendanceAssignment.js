@@ -1,0 +1,15 @@
+const { Schema, model } = require('mongoose');
+
+const attendanceAssignmentSchema = new Schema(
+  {
+    competition: { type: Schema.Types.ObjectId, ref: 'Competition', required: true },
+    student: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
+    volunteer: { type: Schema.Types.ObjectId, ref: 'Admin', required: true },
+    phoneNumber: { type: String, trim: true, maxlength: 20, default: '' },
+    status: { type: String, enum: ['assigned', 'checked_in'], default: 'assigned' }
+  },
+  { timestamps: true }
+);
+
+attendanceAssignmentSchema.index({ competition: 1, student: 1 }, { unique: true });
+module.exports = model('AttendanceAssignment', attendanceAssignmentSchema);

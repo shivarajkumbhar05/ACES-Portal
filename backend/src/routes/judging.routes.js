@@ -2,6 +2,7 @@ const express = require('express');
 const Student = require('../models/Student');
 const QuizRound = require('../models/QuizRound');
 const JudgingScore = require('../models/JudgingScore');
+const Competition = require('../models/Competition');
 const { requireAdmin, requireRoles } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { ADMIN_ROLES } = require('../config/constants');
@@ -11,9 +12,8 @@ router.use(requireAdmin, requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN
 
 router.get('/participants', asyncHandler(async (req, res) => {
   const students = await Student.find().populate('department', 'name').sort({ name: 1 }).lean();
-  const roundNumber = Number(req.query.round || 3);
-  const round = await QuizRound.findOne({ roundNumber });
-  const scores = round ? await JudgingScore.find({ round: round._id, judge: req.admin._id }).lean() : [];
+  const competition = await Competition.findOne({ _id: req.query.competition, type: 'prompt_rush' });
+  const scores = competition ? await JudgingScore.find({ competition: competition._id, judge: req.admin._id }).lean() : [];
   const scoreByStudent = new Map(scores.map((item) => [item.student.toString(), item]));
   res.json(students.map((student) => ({
     id: student._id,
@@ -27,15 +27,16 @@ router.get('/participants', asyncHandler(async (req, res) => {
 }));
 
 router.put('/scores', asyncHandler(async (req, res) => {
-  const { studentId, roundNumber, score, notes = '' } = req.body;
+  const { studentId, competitionId, score, notes = '' } = req.body;
   const numericScore = Number(score);
-  const round = await QuizRound.findOne({ roundNumber: Number(roundNumber) });
-  if (!round || !studentId || !Number.isFinite(numericScore) || numericScore < 0 || numericScore > 1000) {
-    return res.status(400).json({ error: 'A valid participant, round, and score from 0 to 1000 are required' });
+  const competition = await Competition.findOne({ _id: competitionId, type: 'prompt_rush' });
+  const maxScore = competition?.scoringRules?.reduce((total, rule) => total + rule.maxPoints, 0) || 1000;
+  if (!competition || !studentId || !Number.isFinite(numericScore) || numericScore < 0 || numericScore > maxScore) {
+    return res.status(400).json({ error: `A valid participant and score from 0 to ${maxScore} are required` });
   }
   const result = await JudgingScore.findOneAndUpdate(
-    { student: studentId, round: round._id, judge: req.admin._id },
-    { student: studentId, round: round._id, roundNumber: round.roundNumber, judge: req.admin._id, score: numericScore, notes: String(notes).slice(0, 2000) },
+    { student: studentId, competition: competition._id, judge: req.admin._id },
+    { student: studentId, competition: competition._id, judge: req.admin._id, score: numericScore, notes: String(notes).slice(0, 2000) },
     { new: true, upsert: true, runValidators: true }
   );
   res.json(result);

@@ -2,6 +2,7 @@ const express = require('express');
 const Department = require('../models/Department');
 const QuizRound = require('../models/QuizRound');
 const { asyncHandler } = require('../middleware/errorHandler');
+const Competition = require('../models/Competition');
 
 const router = express.Router();
 
@@ -22,6 +23,13 @@ router.get(
     res.json(rounds);
   })
 );
+
+router.get('/competitions', asyncHandler(async (req, res) => {
+  const competitions = await Competition.find({ status: { $ne: 'archived' } })
+    .select('name type description venue date status schedule scoringRules')
+    .sort({ type: 1 });
+  res.json(competitions);
+}));
 
 router.get('/institution', (req, res) => {
   res.json({

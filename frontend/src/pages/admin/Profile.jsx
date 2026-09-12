@@ -4,8 +4,8 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 import { ErrorBanner } from '../../components/common/UI';
 
 export default function Profile() {
-  const { admin } = useAdminAuth();
-  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const { admin, updateAdmin } = useAdminAuth();
+  const [form, setForm] = useState({ name: admin?.name || '', username: admin?.username || '', currentPassword: '', newPassword: '', confirmPassword: '' });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,9 +27,28 @@ export default function Profile() {
     }
   }
 
+  async function saveDetails(event) {
+    event.preventDefault();
+    setError('');
+    try {
+      const res = await api.patch('/auth/profile', { name: form.name, username: form.username });
+      updateAdmin(res.data);
+      setMessage('Profile details updated.');
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    }
+  }
+
   return <section className="space-y-6">
     <header><p className="text-xs font-semibold uppercase tracking-wider text-brand-600">Account</p><h1 className="mt-1 text-2xl font-bold text-slate-900">Profile</h1><p className="mt-1 text-sm text-slate-500">{admin?.name} · @{admin?.username} · {admin?.role}</p></header>
     <div className="card max-w-xl p-6">
+      <h2 className="text-base font-semibold text-slate-800">Profile details</h2>
+      <form onSubmit={saveDetails} className="mt-5 space-y-4">
+        <label className="block"><span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Display name</span><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
+        <label className="block"><span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Username</span><input className="input" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required /></label>
+        <button className="btn-secondary">Save profile</button>
+      </form>
+      <div className="my-6 border-t border-slate-100" />
       <h2 className="text-base font-semibold text-slate-800">Change password</h2>
       {error && <div className="mt-4"><ErrorBanner message={error} /></div>}
       {message && <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}

@@ -13,6 +13,8 @@ const ADMIN_NAV_ITEMS = [
   { to: '/admin/reports', label: 'Reports', icon: 'doc' },
   { to: '/admin/staff', label: 'Staff Accounts', icon: 'users' },
   { to: '/admin/competitions', label: 'Competitions', icon: 'grid' },
+  { to: '/admin/attendance-allocation', label: 'Attendance Allocation', icon: 'users' },
+  { to: '/admin/schedules', label: 'Schedules', icon: 'settings' },
   { to: '/admin/profile', label: 'Profile', icon: 'settings' }
 ];
 

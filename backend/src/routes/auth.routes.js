@@ -83,4 +83,22 @@ router.post(
   })
 );
 
+router.patch(
+  '/profile',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { name, username } = req.body;
+    if (!isNonEmptyString(name, 120) || !isNonEmptyString(username, 80)) {
+      return res.status(400).json({ error: 'Name and username are required' });
+    }
+    const normalizedUsername = username.trim().toLowerCase();
+    const conflict = await Admin.findOne({ username: normalizedUsername, _id: { $ne: req.admin._id } });
+    if (conflict) return res.status(409).json({ error: 'That username is already in use' });
+    req.admin.name = name.trim();
+    req.admin.username = normalizedUsername;
+    await req.admin.save();
+    res.json({ id: req.admin._id, name: req.admin.name, username: req.admin.username, role: req.admin.role });
+  })
+);
+
 module.exports = router;

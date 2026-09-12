@@ -10,7 +10,7 @@ const adminSchema = new Schema(
       enum: Object.values(ADMIN_ROLES),
       default: ADMIN_ROLES.ADMIN
     },
-    name: { type: String, trim: true },
+    name: { type: String, required: true, trim: true, maxlength: 120 },
     isActive: { type: Boolean, default: true },
     lastLoginAt: { type: Date }
   },

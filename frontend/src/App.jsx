@@ -21,7 +21,9 @@ import Profile from './pages/admin/Profile';
 import Staff from './pages/admin/Staff';
 import Judging from './pages/staff/Judging';
 import Attendance from './pages/staff/Attendance';
-import Competitions from './pages/admin/Competitions';
+import Competitions from './pages/admin/CompetitionsPanel';
+import AttendanceAllocation from './pages/admin/AttendanceAllocation';
+import Schedules from './pages/admin/Schedules';
 
 export default function App() {
   return (
@@ -56,6 +58,8 @@ export default function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="staff" element={<ProtectedRoute requireSuperAdmin><Staff /></ProtectedRoute>} />
             <Route path="competitions" element={<ProtectedRoute requireSuperAdmin><Competitions /></ProtectedRoute>} />
+            <Route path="attendance-allocation" element={<ProtectedRoute requireSuperAdmin><AttendanceAllocation /></ProtectedRoute>} />
+            <Route path="schedules" element={<ProtectedRoute requireSuperAdmin><Schedules /></ProtectedRoute>} />
             <Route path="judging" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'judge']}><Judging /></ProtectedRoute>} />
             <Route path="attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'volunteer']}><Attendance /></ProtectedRoute>} />
           </Route>

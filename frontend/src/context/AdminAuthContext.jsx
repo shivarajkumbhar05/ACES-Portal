@@ -48,8 +48,13 @@ export function AdminAuthProvider({ children }) {
     setAdmin(null);
   }, []);
 
+  const updateAdmin = useCallback((profile) => {
+    setAdmin((current) => ({ ...current, ...profile }));
+    localStorage.setItem('aces_admin_profile', JSON.stringify({ ...admin, ...profile }));
+  }, [admin]);
+
   return (
-    <AdminAuthContext.Provider value={{ admin, loading, login, logout, isSuperAdmin: admin?.role === 'super_admin' }}>
+    <AdminAuthContext.Provider value={{ admin, loading, login, logout, updateAdmin, isSuperAdmin: admin?.role === 'super_admin' }}>
       {children}
     </AdminAuthContext.Provider>
   );

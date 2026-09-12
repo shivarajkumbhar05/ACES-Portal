@@ -3,6 +3,7 @@ const Competition = require('../../models/Competition');
 const { requireAdmin, requireSuperAdmin } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { isNonEmptyString } = require('../../utils/validators');
+const { COMPETITION_TYPES } = require('../../config/constants');
 
 const router = express.Router();
 router.use(requireAdmin, requireSuperAdmin);
@@ -12,16 +13,29 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, description = '', date, venue = '', status = 'draft' } = req.body;
-  if (!isNonEmptyString(name, 160) || !['draft', 'published', 'archived'].includes(status)) {
-    return res.status(400).json({ error: 'A competition name and valid status are required' });
+  const { name, type, description = '', date, venue = '', status = 'draft', schedule = {}, scoringRules = [] } = req.body;
+  if (!isNonEmptyString(name, 160) || !Object.values(COMPETITION_TYPES).includes(type) || !['draft', 'published', 'archived'].includes(status)) {
+    return res.status(400).json({ error: 'Name, competition type, and valid status are required' });
   }
-  const competition = await Competition.create({ name: name.trim(), description, date: date || undefined, venue, status, createdBy: req.admin._id });
+  if (await Competition.exists({ type })) return res.status(409).json({ error: `The ${type} competition already exists` });
+  const competition = await Competition.create({ name: name.trim(), type, description, date: date || undefined, venue, status, schedule, scoringRules, createdBy: req.admin._id });
   res.status(201).json(competition);
 }));
 
 router.patch('/:id', asyncHandler(async (req, res) => {
-  const competition = await Competition.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  const allowed = ['name', 'description', 'date', 'venue', 'status', 'schedule', 'scoringRules'];
+  const updates = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowed.includes(key)));
+  const competition = await Competition.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+  if (!competition) return res.status(404).json({ error: 'Competition not found' });
+  res.json(competition);
+}));
+
+router.post('/:id/pause', asyncHandler(async (req, res) => {
+  const competition = await Competition.findByIdAndUpdate(
+    req.params.id,
+    { $set: { 'schedule.isPaused': Boolean(req.body.paused), 'schedule.pauseReason': String(req.body.reason || '').slice(0, 240) } },
+    { new: true, runValidators: true }
+  );
   if (!competition) return res.status(404).json({ error: 'Competition not found' });
   res.json(competition);
 }));

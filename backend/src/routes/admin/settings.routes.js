@@ -32,7 +32,7 @@ router.put(
   requireSuperAdmin,
   asyncHandler(async (req, res) => {
     const roundNumber = Number(req.params.roundNumber);
-    if (![1, 2, 3].includes(roundNumber)) return res.status(400).json({ error: 'roundNumber must be 1, 2, or 3' });
+    if (![1, 2].includes(roundNumber)) return res.status(400).json({ error: 'roundNumber must be 1 or 2' });
 
     const {
       name,

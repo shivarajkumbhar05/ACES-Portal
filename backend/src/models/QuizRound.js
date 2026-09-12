@@ -4,9 +4,9 @@ const { ROUND_STATUS, ROUND_TYPES } = require('../config/constants');
 
 const quizRoundSchema = new Schema(
   {
-    roundNumber: { type: Number, required: true, unique: true, min: 1, max: 3 },
+    roundNumber: { type: Number, required: true, unique: true, min: 1, max: 2 },
     name: { type: String, required: true, trim: true },
-    type: { type: String, enum: Object.values(ROUND_TYPES), default: ROUND_TYPES.QUIZ },
+    type: { type: String, enum: [ROUND_TYPES.QUIZ], default: ROUND_TYPES.QUIZ },
 
     questionsPerQuiz: { type: Number, default: 30, min: 1 },
     timeLimitMinutes: { type: Number, default: 30, min: 1 },

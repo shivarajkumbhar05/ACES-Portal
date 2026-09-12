@@ -2,6 +2,7 @@ const express = require('express');
 const Student = require('../models/Student');
 const QuizRound = require('../models/QuizRound');
 const Attendance = require('../models/Attendance');
+const AttendanceAssignment = require('../models/AttendanceAssignment');
 const { requireAdmin, requireRoles } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { ADMIN_ROLES } = require('../config/constants');
@@ -12,9 +13,13 @@ router.use(requireAdmin, requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN
 router.get('/', asyncHandler(async (req, res) => {
   const roundNumber = Number(req.query.round || 1);
   const round = await QuizRound.findOne({ roundNumber });
-  const students = await Student.find().populate('department', 'name').sort({ name: 1 }).lean();
+  const assignmentFilter = req.admin.role === ADMIN_ROLES.VOLUNTEER ? { volunteer: req.admin._id } : {};
+  const assignments = await AttendanceAssignment.find(assignmentFilter).populate('student').lean();
+  const assignedStudentIds = assignments.map((item) => item.student?._id).filter(Boolean);
+  const students = await Student.find(assignedStudentIds.length ? { _id: { $in: assignedStudentIds } } : { _id: null }).populate('department', 'name').sort({ name: 1 }).lean();
   const records = round ? await Attendance.find({ round: round._id }).lean() : [];
   const byStudent = new Map(records.map((item) => [item.student.toString(), item]));
+  const assignmentByStudent = new Map(assignments.map((item) => [item.student._id.toString(), item]));
   res.json(students.map((student) => ({
     id: student._id,
     name: student.name,
@@ -22,6 +27,7 @@ router.get('/', asyncHandler(async (req, res) => {
     phoneNumber: byStudent.get(student._id.toString())?.phoneNumber || student.phoneNumber || '',
     department: student.department?.name,
     present: byStudent.get(student._id.toString())?.present || false
+    ,assignedVolunteer: assignmentByStudent.get(student._id.toString())?.volunteer
   })));
 }));
 
