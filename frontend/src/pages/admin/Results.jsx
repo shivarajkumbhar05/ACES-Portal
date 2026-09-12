@@ -3,9 +3,10 @@ import api from '../../api/client';
 import { Loader, ErrorBanner, EmptyState, Pagination, StatusBadge, Modal } from '../../components/common/UI';
 import { formatSeconds, formatDateTime } from '../../utils/format';
 
-const ROUND_OPTIONS = [
-  { value: 1, label: 'Round 1' },
-  { value: 2, label: 'Round 2' }
+const COMPETITION_OPTIONS = [
+  { value: '', label: 'All competitions' },
+  { value: 'mcq', label: 'MCQ Competition' },
+  { value: 'prompt_rush', label: 'Prompt Rush' }
 ];
 
 const STATUS_OPTIONS = [
@@ -14,11 +15,12 @@ const STATUS_OPTIONS = [
   { value: 'completed', label: 'Completed' },
   { value: 'expired', label: 'Expired' },
   { value: 'disqualified', label: 'Disqualified' }
+  ,{ value: 'judged', label: 'Judged' }
 ];
 
 export default function Results() {
   const [departments, setDepartments] = useState([]);
-  const [round, setRound] = useState(1);
+  const [competition, setCompetition] = useState('');
   const [department, setDepartment] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -38,12 +40,12 @@ export default function Results() {
     setError('');
     api
       .get('/admin/results', {
-        params: { round, department: department || undefined, status: status || undefined, page, limit: 25 }
+        params: { competition: competition || undefined, department: department || undefined, status: status || undefined, page, limit: 25 }
       })
       .then((res) => setData(res.data))
       .catch(() => setError('Could not load results.'))
       .finally(() => setLoading(false));
-  }, [round, department, status, page]);
+  }, [competition, department, status, page]);
 
   useEffect(() => {
     load();
@@ -59,7 +61,7 @@ export default function Results() {
       .finally(() => setDetailLoading(false));
   }
 
-  const hasFilters = Boolean(department || status);
+  const hasFilters = Boolean(competition || department || status);
 
   return (
     <div className="space-y-6">
@@ -76,10 +78,10 @@ export default function Results() {
       <div className="card flex flex-wrap items-center gap-3 p-3 shadow-sm ring-1 ring-slate-900/5">
         <FilterSelect
           icon="hash"
-          value={round}
-          onChange={(e) => { setRound(Number(e.target.value)); setPage(1); }}
+          value={competition}
+          onChange={(e) => { setCompetition(e.target.value); setPage(1); }}
         >
-          {ROUND_OPTIONS.map((o) => (
+          {COMPETITION_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </FilterSelect>
@@ -106,9 +108,9 @@ export default function Results() {
         </FilterSelect>
 
         {hasFilters && (
-          <button
+            <button
             type="button"
-            onClick={() => { setDepartment(''); setStatus(''); setPage(1); }}
+            onClick={() => { setCompetition(''); setDepartment(''); setStatus(''); setPage(1); }}
             className="rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           >
             Clear filters
@@ -133,8 +135,10 @@ export default function Results() {
               <thead className="bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-400">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Student</th>
+                  <th className="px-4 py-2.5 font-medium">Competition</th>
                   <th className="px-4 py-2.5 font-medium">Department</th>
                   <th className="px-4 py-2.5 font-medium">Status</th>
+                  <th className="px-4 py-2.5 font-medium">Attendance</th>
                   <th className="px-4 py-2.5 font-medium">Flags</th>
                   <th className="px-4 py-2.5 font-medium">Score</th>
                   <th className="px-4 py-2.5 font-medium">Time</th>
@@ -145,7 +149,7 @@ export default function Results() {
               <tbody>
                 {data.items.map((row) => (
                   <tr
-                    key={row.attemptId}
+                    key={row.resultId}
                     className="group border-t border-slate-100 transition-colors hover:bg-slate-50/70"
                   >
                     <td className="px-4 py-3">
@@ -159,36 +163,43 @@ export default function Results() {
                         </div>
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-brand-600">{row.competitionType === 'prompt_rush' ? 'Prompt Rush' : 'MCQ'}</td>
                     <td className="px-4 py-3 text-slate-600">{row.department}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={row.status} />
                     </td>
+                    <td className="px-4 py-3 text-xs text-slate-500">
+                      {row.attendanceStatus === 'checked_in' ? 'Checked in' : row.attendanceStatus === 'assigned' ? 'Allocated' : 'Not allocated'}
+                    </td>
                     <td className="px-4 py-3 text-xs">
-                      {row.violationCount > 0 ? (
+                      {row.competitionType === 'prompt_rush' ? (
+                        <span className="text-slate-500">{row.judgeCount} judge{row.judgeCount === 1 ? '' : 's'}</span>
+                      ) : row.violationCount > 0 ? (
                         <span className="font-semibold text-red-600">{row.violationCount} violation</span>
                       ) : (
                         <span className="text-slate-400">None</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono font-semibold text-brand-700">{row.score}</span>
+                      <span className="font-mono font-semibold text-brand-700">{Number(row.score).toFixed(1)}{row.maxScore ? ` / ${row.maxScore}` : ''}</span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                      {formatSeconds(row.timeTakenSeconds)}
+                      {row.competitionType === 'prompt_rush' ? 'Judged' : formatSeconds(row.timeTakenSeconds)}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-400">
                       {formatDateTime(row.submittedAt)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => openDetail(row.attemptId)}
+                        onClick={() => row.attemptId && openDetail(row.attemptId)}
+                        disabled={!row.attemptId}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-xs font-medium text-slate-500 opacity-60 transition group-hover:opacity-100 hover:border-slate-200 hover:bg-white hover:text-slate-800"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
-                        View
+                        {row.attemptId ? 'View' : 'Judging record'}
                       </button>
                     </td>
                   </tr>

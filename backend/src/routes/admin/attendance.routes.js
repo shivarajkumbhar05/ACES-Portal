@@ -38,9 +38,15 @@ router.put('/assignments', asyncHandler(async (req, res) => {
     Admin.findOne({ _id: volunteerId, role: ADMIN_ROLES.VOLUNTEER, isActive: true })
   ]);
   if (!competition || !volunteer) return res.status(400).json({ error: 'Competition or volunteer not found' });
-  await AttendanceAssignment.deleteMany({ competition: competitionId, student: { $in: studentIds } });
-  const rows = await AttendanceAssignment.insertMany(studentIds.map((student) => ({ competition: competitionId, student, volunteer: volunteerId })));
-  res.json(rows);
+  const operations = studentIds.map((student) => ({
+    updateOne: {
+      filter: { competition: competitionId, student },
+      update: { $set: { competition: competitionId, student, volunteer: volunteerId, status: 'assigned' } },
+      upsert: true
+    }
+  }));
+  await AttendanceAssignment.bulkWrite(operations);
+  res.json(await AttendanceAssignment.find({ competition: competitionId, student: { $in: studentIds } }).populate('student', 'name rollNumber').populate('volunteer', 'name').lean());
 }));
 
 router.get('/download', asyncHandler(async (req, res) => {

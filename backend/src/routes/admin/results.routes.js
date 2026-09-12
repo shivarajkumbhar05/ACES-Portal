@@ -1,6 +1,9 @@
 const express = require('express');
 const Attempt = require('../../models/Attempt');
 const Question = require('../../models/Question');
+const JudgingScore = require('../../models/JudgingScore');
+const Competition = require('../../models/Competition');
+const AttendanceAssignment = require('../../models/AttendanceAssignment');
 const { requireAdmin } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { isValidObjectId } = require('../../utils/validators');
@@ -12,7 +15,7 @@ router.use(requireAdmin);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { round, department, status, minScore, from, to, page = 1, limit = 50 } = req.query;
+    const { round, competition, department, status, minScore, from, to, page = 1, limit = 50 } = req.query;
     const filter = {};
     if (round) filter.roundNumber = Number(round);
     if (department && isValidObjectId(department)) filter.department = department;
@@ -27,7 +30,7 @@ router.get(
     const pageNum = Math.max(1, Number(page));
     const limitNum = Math.min(200, Math.max(1, Number(limit)));
 
-    const [items, total] = await Promise.all([
+    const [items, total, competitions, promptRush, assignments] = await Promise.all([
       Attempt.find(filter)
         .populate('student', 'name rollNumber')
         .populate('department', 'name')
@@ -35,14 +38,26 @@ router.get(
         .skip((pageNum - 1) * limitNum)
         .limit(limitNum)
         .lean(),
-      Attempt.countDocuments(filter)
+      Attempt.countDocuments(filter),
+      Competition.find({ type: { $in: ['mcq', 'prompt_rush'] } }).lean(),
+      Competition.findOne({ type: 'prompt_rush' }).lean(),
+      AttendanceAssignment.find().select('competition student volunteer status phoneNumber').populate('volunteer', 'name').lean()
     ]);
 
-    const rows = items.map((a) => ({
+    const assignmentByStudent = new Map(assignments.map((item) => [`${item.competition}:${item.student}`, item]));
+    const mcqCompetition = competitions.find((item) => item.type === 'mcq');
+    const mcqRows = items.map((a) => {
+      const assignment = mcqCompetition ? assignmentByStudent.get(`${mcqCompetition._id}:${a.student?._id}`) : null;
+      return {
+      resultId: a._id,
       attemptId: a._id,
+      source: 'mcq',
+      competitionType: 'mcq',
+      competition: mcqCompetition?.name || 'MCQ Competition',
       student: a.student?.name,
       rollNumber: a.student?.rollNumber,
       department: a.department?.name,
+      departmentId: a.department?._id,
       round: a.roundNumber,
       status: a.status,
       score: a.score,
@@ -53,9 +68,63 @@ router.get(
       violationReason: a.violationReason,
       timeTakenSeconds: a.timeTakenSeconds,
       submittedAt: a.submittedAt
-    }));
+      ,attendanceStatus: assignment?.status || 'not_assigned'
+      ,volunteer: assignment?.volunteer?.name
+      };
+    });
 
-    res.json({ items: rows, total, page: pageNum, pages: Math.ceil(total / limitNum) });
+    let promptRows = [];
+    if (promptRush && (!competition || competition === promptRush._id.toString() || competition === 'prompt_rush')) {
+      const scores = await JudgingScore.find({ competition: promptRush._id })
+        .populate('student', 'name rollNumber department')
+        .populate({ path: 'student', populate: { path: 'department', select: 'name' } })
+        .lean();
+      const byStudent = new Map();
+      scores.forEach((score) => {
+        const key = score.student?._id?.toString();
+        if (!key) return;
+        const current = byStudent.get(key) || { scores: [], notes: [], student: score.student };
+        current.scores.push(score.score);
+        if (score.notes) current.notes.push(score.notes);
+        byStudent.set(key, current);
+      });
+      promptRows = [...byStudent.values()].map((entry) => {
+        const assignment = assignmentByStudent.get(`${promptRush._id}:${entry.student._id}`);
+        const score = entry.scores.reduce((sum, value) => sum + value, 0) / entry.scores.length;
+        return {
+          resultId: `prompt-${entry.student._id}`,
+          attemptId: null,
+          source: 'judging',
+          competitionType: 'prompt_rush',
+          competition: promptRush.name,
+          student: entry.student.name,
+          rollNumber: entry.student.rollNumber,
+          department: entry.student.department?.name,
+          departmentId: entry.student.department?._id,
+          status: 'judged',
+          score,
+          maxScore: promptRush.scoringRules.reduce((sum, rule) => sum + rule.maxPoints, 0),
+          judgeCount: entry.scores.length,
+          judgeNotes: entry.notes.join(' | '),
+          attendanceStatus: assignment?.status || 'not_assigned',
+          volunteer: assignment?.volunteer?.name,
+          phoneNumber: assignment?.phoneNumber || '',
+          submittedAt: null
+        };
+      });
+    }
+
+    const rows = [...mcqRows, ...promptRows].filter((row) => {
+      if (competition === 'mcq' && row.competitionType !== 'mcq') return false;
+      if (competition === 'prompt_rush' && row.competitionType !== 'prompt_rush') return false;
+      if (status && row.status !== status) return false;
+      if (department && row.department !== department && row.departmentId !== department) return false;
+      if (minScore && Number(row.score) < Number(minScore)) return false;
+      return true;
+    });
+
+    const start = (pageNum - 1) * limitNum;
+    res.json({ items: rows.slice(start, start + limitNum), total: rows.length, page: pageNum, pages: Math.max(1, Math.ceil(rows.length / limitNum)) });
   })
 );
 

@@ -12,8 +12,9 @@ router.use(requireAdmin, requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN
 
 router.get('/', asyncHandler(async (req, res) => {
   const roundNumber = Number(req.query.round || 1);
+  const competitionId = req.query.competition;
   const round = await QuizRound.findOne({ roundNumber });
-  const assignmentFilter = req.admin.role === ADMIN_ROLES.VOLUNTEER ? { volunteer: req.admin._id } : {};
+  const assignmentFilter = { ...(req.admin.role === ADMIN_ROLES.VOLUNTEER ? { volunteer: req.admin._id } : {}), ...(competitionId ? { competition: competitionId } : {}) };
   const assignments = await AttendanceAssignment.find(assignmentFilter).populate('student').lean();
   const assignedStudentIds = assignments.map((item) => item.student?._id).filter(Boolean);
   const students = await Student.find(assignedStudentIds.length ? { _id: { $in: assignedStudentIds } } : { _id: null }).populate('department', 'name').sort({ name: 1 }).lean();
@@ -26,13 +27,14 @@ router.get('/', asyncHandler(async (req, res) => {
     rollNumber: student.rollNumber,
     phoneNumber: byStudent.get(student._id.toString())?.phoneNumber || student.phoneNumber || '',
     department: student.department?.name,
-    present: byStudent.get(student._id.toString())?.present || false
+    present: Boolean(byStudent.get(student._id.toString())?.present || assignmentByStudent.get(student._id.toString())?.status === 'checked_in'),
+    allocationStatus: assignmentByStudent.get(student._id.toString())?.status || 'assigned'
     ,assignedVolunteer: assignmentByStudent.get(student._id.toString())?.volunteer
   })));
 }));
 
 router.put('/', asyncHandler(async (req, res) => {
-  const { studentId, roundNumber, phoneNumber, present = true } = req.body;
+  const { studentId, roundNumber, competitionId, phoneNumber, present = true } = req.body;
   const round = await QuizRound.findOne({ roundNumber: Number(roundNumber) });
   const student = await Student.findById(studentId);
   if (!round || !student || !String(phoneNumber || '').trim()) {
@@ -45,6 +47,12 @@ router.put('/', asyncHandler(async (req, res) => {
     { student: student._id, round: round._id, roundNumber: round.roundNumber, volunteer: req.admin._id, phoneNumber: student.phoneNumber, present: Boolean(present), checkedInAt: new Date() },
     { new: true, upsert: true, runValidators: true }
   );
+  if (competitionId) {
+    await AttendanceAssignment.findOneAndUpdate(
+      { competition: competitionId, student: student._id, volunteer: req.admin._id },
+      { phoneNumber: student.phoneNumber, status: present ? 'checked_in' : 'assigned' }
+    );
+  }
   res.json(record);
 }));
 
