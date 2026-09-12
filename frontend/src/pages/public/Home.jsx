@@ -163,7 +163,7 @@ export default function Home() {
         </div>
 
         <footer className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-400">
-          This is Designed under the guidance of Mr.V.V.Chougule,Professor, Department of Computer Engineering Department.
+          This is Designed under the guidance of Mr.Chougule.V.V,Professor, Department of Computer Engineering Department.
           Developed by ShivRj Shrishail Kumbhar
         </footer>
       </div>
