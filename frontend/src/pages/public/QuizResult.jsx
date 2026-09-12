@@ -8,7 +8,9 @@ export default function QuizResult() {
   const navigate = useNavigate();
   const [result, setResult] = useState(() => {
     const cached = localStorage.getItem('aces_result');
-    return cached ? JSON.parse(cached) : null;
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return { ...parsed, score: null, maxScore: null, percentage: null };
   });
   const [loading, setLoading] = useState(!result);
   const [error, setError] = useState('');

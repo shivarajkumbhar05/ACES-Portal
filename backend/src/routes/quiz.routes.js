@@ -343,9 +343,10 @@ router.post(
       unanswered: attempt.unanswered,
       status: attempt.status,
       violationReason: attempt.violationReason,
-      score: round.showScoreToStudent ? attempt.score : null,
-      maxScore: round.showScoreToStudent ? attempt.maxScore : null,
-      percentage: round.showScoreToStudent ? attempt.percentage : null,
+      // MCQ scores are committee-only; students receive completion statistics without marks.
+      score: null,
+      maxScore: null,
+      percentage: null,
       timeTakenSeconds: attempt.timeTakenSeconds
     });
   })
@@ -380,9 +381,10 @@ router.get(
       unanswered: attempt.unanswered,
       status: attempt.status,
       violationReason: attempt.violationReason,
-      score: round.showScoreToStudent ? attempt.score : null,
-      maxScore: round.showScoreToStudent ? attempt.maxScore : null,
-      percentage: round.showScoreToStudent ? attempt.percentage : null,
+      // MCQ scores are available in the admin Results panel, never in the student portal.
+      score: null,
+      maxScore: null,
+      percentage: null,
       timeTakenSeconds: attempt.timeTakenSeconds,
       qualification
     });

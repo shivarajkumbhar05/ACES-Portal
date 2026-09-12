@@ -9,6 +9,7 @@ const participantsRoutes = require('./participants.routes');
 const reportsRoutes = require('./reports.routes');
 const competitionsRoutes = require('./competitions.routes');
 const attendanceRoutes = require('./attendance.routes');
+const controlRoomRoutes = require('./control-room.routes');
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use('/participants', participantsRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/competitions', competitionsRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/control-room', controlRoomRoutes);
 
 module.exports = router;

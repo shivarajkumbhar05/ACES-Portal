@@ -3,6 +3,7 @@ const Student = require('../models/Student');
 const QuizRound = require('../models/QuizRound');
 const JudgingScore = require('../models/JudgingScore');
 const Competition = require('../models/Competition');
+const AttendanceAssignment = require('../models/AttendanceAssignment');
 const { requireAdmin, requireRoles } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { ADMIN_ROLES } = require('../config/constants');
@@ -13,16 +14,21 @@ router.use(requireAdmin, requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN
 router.get('/participants', asyncHandler(async (req, res) => {
   const students = await Student.find().populate('department', 'name').sort({ name: 1 }).lean();
   const competition = await Competition.findOne({ _id: req.query.competition, type: 'prompt_rush' });
+  const assignments = competition ? await AttendanceAssignment.find({ competition: competition._id }).select('student').lean() : [];
+  const allocatedIds = new Set(assignments.map((item) => item.student.toString()));
   const scores = competition ? await JudgingScore.find({ competition: competition._id, judge: req.admin._id }).lean() : [];
   const scoreByStudent = new Map(scores.map((item) => [item.student.toString(), item]));
-  res.json(students.map((student) => ({
+  const maxScore = competition?.scoringRules?.reduce((total, rule) => total + rule.maxPoints, 0) || 0;
+  res.json(students.filter((student) => allocatedIds.has(student._id.toString())).map((student) => ({
     id: student._id,
     name: student.name,
     rollNumber: student.rollNumber,
     phoneNumber: student.phoneNumber,
     department: student.department?.name,
     score: scoreByStudent.get(student._id.toString())?.score ?? null,
-    notes: scoreByStudent.get(student._id.toString())?.notes || ''
+    notes: scoreByStudent.get(student._id.toString())?.notes || '',
+    maxScore,
+    scoringRules: competition?.scoringRules || []
   })));
 }));
 

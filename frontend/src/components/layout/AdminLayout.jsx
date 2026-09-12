@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
 const ADMIN_NAV_ITEMS = [
+  { to: '/admin/control-room', label: 'Live Control Room', icon: 'grid' },
   { to: '/admin', label: 'Dashboard', end: true, icon: 'grid' },
   { to: '/admin/questions', label: 'Questions', icon: 'list' },
   { to: '/admin/upload', label: 'Bulk Upload', icon: 'upload' },

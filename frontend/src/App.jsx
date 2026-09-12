@@ -24,6 +24,7 @@ import Attendance from './pages/staff/Attendance';
 import Competitions from './pages/admin/CompetitionsPanel';
 import AttendanceAllocation from './pages/admin/AttendanceAllocation';
 import Schedules from './pages/admin/Schedules';
+import ControlRoom from './pages/admin/ControlRoom';
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="control-room" element={<ControlRoom />} />
             <Route path="questions" element={<Questions />} />
             <Route path="upload" element={<Upload />} />
             <Route path="rounds" element={<Rounds />} />
