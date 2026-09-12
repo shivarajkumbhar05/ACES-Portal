@@ -4,7 +4,7 @@ const AuditLog = require('../../models/AuditLog');
 const { requireAdmin, requireSuperAdmin } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { isNonEmptyString } = require('../../utils/validators');
-const { ROUND_STATUS } = require('../../config/constants');
+const { ROUND_STATUS, ROUND_TYPES } = require('../../config/constants');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -32,7 +32,7 @@ router.put(
   requireSuperAdmin,
   asyncHandler(async (req, res) => {
     const roundNumber = Number(req.params.roundNumber);
-    if (![1, 2].includes(roundNumber)) return res.status(400).json({ error: 'roundNumber must be 1 or 2' });
+    if (![1, 2, 3].includes(roundNumber)) return res.status(400).json({ error: 'roundNumber must be 1, 2, or 3' });
 
     const {
       name,
@@ -48,7 +48,8 @@ router.put(
       showCorrectAnswers,
       showScoreToStudent,
       showLeaderboardToStudents,
-      participantLimit
+      participantLimit,
+      type
     } = req.body;
 
     const errors = [];
@@ -85,6 +86,9 @@ router.put(
         }
       });
     if (errors.length) return res.status(400).json({ error: 'Invalid round settings', details: errors });
+    if (type !== undefined && !Object.values(ROUND_TYPES).includes(type)) {
+      return res.status(400).json({ error: 'type must be a supported round type' });
+    }
 
     let round = await QuizRound.findOne({ roundNumber });
     const isNew = !round;
@@ -112,6 +116,7 @@ router.put(
     if (showScoreToStudent !== undefined) round.showScoreToStudent = showScoreToStudent;
     if (showLeaderboardToStudents !== undefined) round.showLeaderboardToStudents = showLeaderboardToStudents;
     if (participantLimit !== undefined) round.participantLimit = participantLimit === null ? null : parsedNumbers.participantLimit;
+    if (type !== undefined) round.type = type;
 
     await round.save();
 

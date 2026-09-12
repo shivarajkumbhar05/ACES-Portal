@@ -36,7 +36,7 @@ export function AdminAuthProvider({ children }) {
       localStorage.setItem('aces_admin_token', res.data.token);
       localStorage.setItem('aces_admin_profile', JSON.stringify(res.data.admin));
       setAdmin(res.data.admin);
-      return { ok: true };
+      return { ok: true, role: res.data.admin.role };
     } catch (err) {
       return { ok: false, message: apiErrorMessage(err, 'Invalid username or password') };
     }

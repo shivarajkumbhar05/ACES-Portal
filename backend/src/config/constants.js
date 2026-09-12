@@ -20,7 +20,16 @@ const ATTEMPT_STATUS = {
 
 const ADMIN_ROLES = {
   SUPER_ADMIN: 'super_admin',
-  ADMIN: 'admin'
+  ADMIN: 'admin',
+  JUDGE: 'judge',
+  VOLUNTEER: 'volunteer'
+};
+
+const ROUND_TYPES = {
+  QUIZ: 'quiz',
+  RAPID_FIRE: 'rapid_fire',
+  QUESTIONING: 'questioning',
+  PROMPT_RUSH: 'prompt_rush'
 };
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
@@ -32,6 +41,7 @@ module.exports = {
   ROUND_STATUS,
   ATTEMPT_STATUS,
   ADMIN_ROLES,
+  ROUND_TYPES,
   DIFFICULTIES,
   ROUND2_TOP_N_PER_DEPARTMENT
 };

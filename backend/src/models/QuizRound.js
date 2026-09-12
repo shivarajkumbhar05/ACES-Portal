@@ -1,11 +1,12 @@
 const { Schema, model } = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { ROUND_STATUS } = require('../config/constants');
+const { ROUND_STATUS, ROUND_TYPES } = require('../config/constants');
 
 const quizRoundSchema = new Schema(
   {
-    roundNumber: { type: Number, required: true, unique: true }, // 1 or 2
+    roundNumber: { type: Number, required: true, unique: true, min: 1, max: 3 },
     name: { type: String, required: true, trim: true },
+    type: { type: String, enum: Object.values(ROUND_TYPES), default: ROUND_TYPES.QUIZ },
 
     questionsPerQuiz: { type: Number, default: 30, min: 1 },
     timeLimitMinutes: { type: Number, default: 30, min: 1 },

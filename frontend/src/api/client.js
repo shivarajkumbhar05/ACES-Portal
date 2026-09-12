@@ -10,7 +10,7 @@ export const api = axios.create({
 // making the request: admin routes use the admin token, student quiz routes
 // use the per-attempt student token. Both are kept in localStorage.
 api.interceptors.request.use((config) => {
-  const isAdminRoute = config.url?.startsWith('/admin') || config.url?.startsWith('/auth');
+  const isAdminRoute = ['/admin', '/auth', '/staff', '/judging', '/attendance'].some((prefix) => config.url?.startsWith(prefix));
   const token = isAdminRoute
     ? localStorage.getItem('aces_admin_token')
     : localStorage.getItem('aces_student_token');
@@ -25,7 +25,7 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err.response?.status;
-    const isAdminRoute = err.config?.url?.startsWith('/admin') || err.config?.url?.startsWith('/auth');
+    const isAdminRoute = ['/admin', '/auth', '/staff', '/judging', '/attendance'].some((prefix) => err.config?.url?.startsWith(prefix));
     if (status === 401 && isAdminRoute) {
       localStorage.removeItem('aces_admin_token');
       localStorage.removeItem('aces_admin_profile');

@@ -7,6 +7,7 @@ const resultsRoutes = require('./results.routes');
 const qualificationRoutes = require('./qualification.routes');
 const participantsRoutes = require('./participants.routes');
 const reportsRoutes = require('./reports.routes');
+const competitionsRoutes = require('./competitions.routes');
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use('/results', resultsRoutes);
 router.use('/qualification', qualificationRoutes);
 router.use('/participants', participantsRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/competitions', competitionsRoutes);
 
 module.exports = router;

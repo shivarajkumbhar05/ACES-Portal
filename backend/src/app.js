@@ -8,6 +8,9 @@ const authRoutes = require('./routes/auth.routes');
 const publicRoutes = require('./routes/public.routes');
 const quizRoutes = require('./routes/quiz.routes');
 const adminRoutes = require('./routes/admin/index');
+const staffRoutes = require('./routes/staff.routes');
+const judgingRoutes = require('./routes/judging.routes');
+const attendanceRoutes = require('./routes/attendance.routes');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 function createApp() {
@@ -38,6 +41,9 @@ function createApp() {
   app.use('/api/public', publicRoutes);
   app.use('/api/quiz', quizRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/staff', staffRoutes);
+  app.use('/api/judging', judgingRoutes);
+  app.use('/api/attendance', attendanceRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

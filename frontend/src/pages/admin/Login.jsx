@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { ErrorBanner } from '../../components/common/UI';
 
-export default function Login() {
+export default function Login({ staffMode = false }) {
   const { login, admin } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,7 +24,7 @@ export default function Login() {
     const result = await login(username, password);
     setSubmitting(false);
     if (result.ok) {
-      navigate(location.state?.from || '/admin', { replace: true });
+      navigate(location.state?.from || (result.role === 'judge' ? '/admin/judging' : result.role === 'volunteer' ? '/admin/attendance' : '/admin'), { replace: true });
     } else {
       setError(result.message);
     }
@@ -51,14 +51,14 @@ export default function Login() {
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70">
                   ACES Quiz
                 </p>
-                <h1 className="text-lg font-bold leading-tight text-white">Admin Console</h1>
+                <h1 className="text-lg font-bold leading-tight text-white">{staffMode ? 'Judging & Volunteer Portal' : 'Admin Console'}</h1>
               </div>
             </div>
           </div>
 
           {/* Body */}
           <div className="p-6">
-            <p className="text-sm text-slate-400">Sign in to manage the quiz.</p>
+            <p className="text-sm text-slate-400">{staffMode ? 'Sign in to score rounds or record attendance.' : 'Sign in to manage the competition.'}</p>
 
             {error && (
               <div className="mt-4">

@@ -4,6 +4,7 @@ const studentSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     rollNumber: { type: String, required: true, trim: true, uppercase: true },
+    phoneNumber: { type: String, trim: true, maxlength: 20, default: '' },
     department: { type: Schema.Types.ObjectId, ref: 'Department', required: true }
   },
   { timestamps: true }

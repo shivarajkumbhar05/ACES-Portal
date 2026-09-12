@@ -157,9 +157,13 @@ export default function Home() {
           <Link to="/admin/login" className="btn-secondary px-6 py-3 text-base">
             Admin Login
           </Link>
+          <Link to="/staff/login" className="btn-secondary px-6 py-3 text-base">
+            Judge / Volunteer Login
+          </Link>
         </div>
 
         <footer className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-400">
+          This is Designed under the guidance of Mr.V.V.Chougule,Professor, Department of Computer Engineering Department.
           Developed by ShivRj Shrishail Kumbhar
         </footer>
       </div>

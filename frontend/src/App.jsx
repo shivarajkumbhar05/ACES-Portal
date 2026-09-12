@@ -17,6 +17,11 @@ import Results from './pages/admin/Results';
 import Qualification from './pages/admin/Qualification';
 import Participants from './pages/admin/Participants';
 import Reports from './pages/admin/Reports';
+import Profile from './pages/admin/Profile';
+import Staff from './pages/admin/Staff';
+import Judging from './pages/staff/Judging';
+import Attendance from './pages/staff/Attendance';
+import Competitions from './pages/admin/Competitions';
 
 export default function App() {
   return (
@@ -31,6 +36,7 @@ export default function App() {
 
           {/* Admin routes */}
           <Route path="/admin/login" element={<Login />} />
+          <Route path="/staff/login" element={<Login staffMode />} />
           <Route
             path="/admin"
             element={
@@ -47,6 +53,11 @@ export default function App() {
             <Route path="qualification" element={<Qualification />} />
             <Route path="participants" element={<Participants />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="staff" element={<ProtectedRoute requireSuperAdmin><Staff /></ProtectedRoute>} />
+            <Route path="competitions" element={<ProtectedRoute requireSuperAdmin><Competitions /></ProtectedRoute>} />
+            <Route path="judging" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'judge']}><Judging /></ProtectedRoute>} />
+            <Route path="attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'volunteer']}><Attendance /></ProtectedRoute>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

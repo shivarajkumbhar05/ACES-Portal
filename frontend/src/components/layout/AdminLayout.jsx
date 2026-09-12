@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
-const NAV_ITEMS = [
+const ADMIN_NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', end: true, icon: 'grid' },
   { to: '/admin/questions', label: 'Questions', icon: 'list' },
   { to: '/admin/upload', label: 'Bulk Upload', icon: 'upload' },
@@ -10,13 +10,22 @@ const NAV_ITEMS = [
   { to: '/admin/results', label: 'Results', icon: 'chart' },
   { to: '/admin/qualification', label: 'Round 2 Qualification', icon: 'filter' },
   { to: '/admin/participants', label: 'Participants', icon: 'users' },
-  { to: '/admin/reports', label: 'Reports', icon: 'doc' }
+  { to: '/admin/reports', label: 'Reports', icon: 'doc' },
+  { to: '/admin/staff', label: 'Staff Accounts', icon: 'users' },
+  { to: '/admin/competitions', label: 'Competitions', icon: 'grid' },
+  { to: '/admin/profile', label: 'Profile', icon: 'settings' }
 ];
+
+const STAFF_NAV_ITEMS = {
+  judge: [{ to: '/admin/judging', label: 'Judging Portal', icon: 'chart' }, { to: '/admin/profile', label: 'Profile', icon: 'settings' }],
+  volunteer: [{ to: '/admin/attendance', label: 'Attendance', icon: 'users' }, { to: '/admin/profile', label: 'Profile', icon: 'settings' }]
+};
 
 export default function AdminLayout() {
   const { admin, logout } = useAdminAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navItems = STAFF_NAV_ITEMS[admin?.role] || ADMIN_NAV_ITEMS;
 
   function handleLogout() {
     logout();
@@ -40,7 +49,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <SidebarLink key={item.to} item={item} />
           ))}
         </nav>
@@ -93,7 +102,7 @@ export default function AdminLayout() {
         {mobileOpen && (
           <div className="border-b border-slate-200 bg-white px-3 py-3 md:hidden">
             <nav className="grid grid-cols-2 gap-2">
-              {NAV_ITEMS.map((item) => (
+              {navItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}

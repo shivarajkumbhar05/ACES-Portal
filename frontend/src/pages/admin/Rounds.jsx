@@ -6,6 +6,7 @@ function emptyFormFor(roundNumber, existing) {
   if (existing) {
     return {
       name: existing.name,
+      type: existing.type || (roundNumber === 2 ? 'rapid_fire' : roundNumber === 3 ? 'questioning' : 'quiz'),
       questionsPerQuiz: existing.questionsPerQuiz,
       timeLimitMinutes: existing.timeLimitMinutes,
       marksPerQuestion: existing.marksPerQuestion,
@@ -23,6 +24,7 @@ function emptyFormFor(roundNumber, existing) {
   }
   return {
     name: `Round ${roundNumber}`,
+    type: roundNumber === 2 ? 'rapid_fire' : roundNumber === 3 ? 'questioning' : 'quiz',
     questionsPerQuiz: 30,
     timeLimitMinutes: 30,
     marksPerQuestion: 1,
@@ -201,6 +203,14 @@ function RoundCard({ roundNumber, initial, onSaved }) {
                 placeholder={round ? '••••••••' : 'Set an exam code'}
               />
             </FormField>
+            <FormField label="Round format">
+              <select className="input" value={form.type} onChange={(e) => update('type', e.target.value)}>
+                <option value="quiz">Quiz</option>
+                <option value="rapid_fire">Rapid Fire</option>
+                <option value="questioning">Questioning</option>
+                <option value="prompt_rush">Prompt Rush</option>
+              </select>
+            </FormField>
           </div>
         </FormSection>
 
@@ -250,7 +260,7 @@ function RoundCard({ roundNumber, initial, onSaved }) {
           <div className="mt-4">
             <FormField
               label="Participant limit"
-              hint={`Qualifiers per department (Round ${roundNumber === 2 ? '2' : '1'}). Optional.`}
+              hint={`Optional participant limit for round ${roundNumber}.`}
             >
               <input
                 type="number"
@@ -432,6 +442,7 @@ export default function Rounds() {
 
   const round1 = rounds?.find((r) => r.roundNumber === 1) || null;
   const round2 = rounds?.find((r) => r.roundNumber === 2) || null;
+  const round3 = rounds?.find((r) => r.roundNumber === 3) || null;
 
   return (
     <div className="space-y-6">
@@ -446,6 +457,7 @@ export default function Rounds() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <RoundCard roundNumber={1} initial={round1} onSaved={load} />
         <RoundCard roundNumber={2} initial={round2} onSaved={load} />
+        <RoundCard roundNumber={3} initial={round3} onSaved={load} />
       </div>
     </div>
   );

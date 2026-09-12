@@ -66,4 +66,21 @@ router.get(
   })
 );
 
+router.post(
+  '/password',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!isNonEmptyString(currentPassword) || !isNonEmptyString(newPassword) || newPassword.length < 8) {
+      return res.status(400).json({ error: 'Current password and a new password of at least 8 characters are required' });
+    }
+    const matches = await bcrypt.compare(currentPassword, req.admin.passwordHash);
+    if (!matches) return res.status(400).json({ error: 'Current password is incorrect' });
+    req.admin.passwordHash = await bcrypt.hash(newPassword, 12);
+    await req.admin.save();
+    await AuditLog.create({ admin: req.admin._id, action: 'admin.password_change', ipAddress: req.ip });
+    res.json({ message: 'Password changed successfully' });
+  })
+);
+
 module.exports = router;

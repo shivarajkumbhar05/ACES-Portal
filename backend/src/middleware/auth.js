@@ -37,6 +37,15 @@ function requireSuperAdmin(req, res, next) {
   next();
 }
 
+function requireRoles(...roles) {
+  return (req, res, next) => {
+    if (!req.admin || !roles.includes(req.admin.role)) {
+      return res.status(403).json({ error: 'This staff role is not allowed to access this resource' });
+    }
+    next();
+  };
+}
+
 /**
  * Requires a valid student (attempt-scoped) JWT. Attaches req.attemptId and
  * req.studentId, and loads the live attempt document onto req.attempt so
@@ -63,4 +72,4 @@ async function requireStudentAttempt(req, res, next) {
   }
 }
 
-module.exports = { requireAdmin, requireSuperAdmin, requireStudentAttempt };
+module.exports = { requireAdmin, requireSuperAdmin, requireRoles, requireStudentAttempt };
