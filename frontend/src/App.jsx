@@ -19,7 +19,8 @@ import Participants from './pages/admin/Participants';
 import Reports from './pages/admin/Reports';
 import Profile from './pages/admin/Profile';
 import Staff from './pages/admin/Staff';
-import Judging from './pages/staff/Judging';
+import Judging from './pages/staff/JudgingRubric';
+import JudgingReview from './pages/admin/JudgingReview';
 import Attendance from './pages/staff/Attendance';
 import Competitions from './pages/admin/CompetitionsPanel';
 import AttendanceAllocation from './pages/admin/AttendanceAllocation';
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="attendance-allocation" element={<ProtectedRoute requireSuperAdmin><AttendanceAllocation /></ProtectedRoute>} />
             <Route path="schedules" element={<ProtectedRoute requireSuperAdmin><Schedules /></ProtectedRoute>} />
             <Route path="judging" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'judge']}><Judging /></ProtectedRoute>} />
+            <Route path="judging-review" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><JudgingReview /></ProtectedRoute>} />
             <Route path="attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'volunteer']}><Attendance /></ProtectedRoute>} />
           </Route>
 

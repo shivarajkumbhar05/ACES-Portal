@@ -16,6 +16,7 @@ const ADMIN_NAV_ITEMS = [
   { to: '/admin/competitions', label: 'Competitions', icon: 'grid' },
   { to: '/admin/attendance-allocation', label: 'Attendance Allocation', icon: 'users' },
   { to: '/admin/schedules', label: 'Schedules', icon: 'settings' },
+  { to: '/admin/judging-review', label: 'Judging Review', icon: 'chart' },
   { to: '/admin/profile', label: 'Profile', icon: 'settings' }
 ];
 
