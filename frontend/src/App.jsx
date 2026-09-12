@@ -7,6 +7,8 @@ import Home from './pages/public/Home';
 import JoinQuiz from './pages/public/JoinQuiz';
 import QuizAttempt from './pages/public/QuizAttempt';
 import QuizResult from './pages/public/QuizResult';
+import Leaderboard from './pages/public/Leaderboard';
+import Publication from './pages/admin/Publication';
 
 import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
@@ -37,6 +39,7 @@ export default function App() {
           <Route path="/quiz/join" element={<JoinQuiz />} />
           <Route path="/quiz/attempt" element={<QuizAttempt />} />
           <Route path="/quiz/result" element={<QuizResult />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
 
           {/* Admin routes */}
           <Route path="/admin/login" element={<Login />} />
@@ -65,6 +68,7 @@ export default function App() {
             <Route path="schedules" element={<ProtectedRoute requireSuperAdmin><Schedules /></ProtectedRoute>} />
             <Route path="judging" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'judge']}><Judging /></ProtectedRoute>} />
             <Route path="judging-review" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><JudgingReview /></ProtectedRoute>} />
+            <Route path="publication" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><Publication /></ProtectedRoute>} />
             <Route path="attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'volunteer']}><Attendance /></ProtectedRoute>} />
           </Route>
 

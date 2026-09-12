@@ -160,6 +160,9 @@ export default function Home() {
           <Link to="/staff/login" className="btn-secondary px-6 py-3 text-base">
             Judge / Volunteer Login
           </Link>
+          <Link to="/leaderboard" className="btn-secondary px-6 py-3 text-base">
+            Published Results
+          </Link>
         </div>
 
         <footer className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-400">

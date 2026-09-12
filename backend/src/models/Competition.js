@@ -24,6 +24,8 @@ const competitionSchema = new Schema(
       pauseReason: { type: String, trim: true, maxlength: 240, default: '' }
     },
     scoringRules: { type: [scoringRuleSchema], default: [] },
+    resultsPublished: { type: Boolean, default: false },
+    resultsPublishedAt: { type: Date, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Admin', required: true }
   },
   { timestamps: true }

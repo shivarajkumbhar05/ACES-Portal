@@ -3,6 +3,8 @@ const Department = require('../models/Department');
 const QuizRound = require('../models/QuizRound');
 const { asyncHandler } = require('../middleware/errorHandler');
 const Competition = require('../models/Competition');
+const Attempt = require('../models/Attempt');
+const JudgingScore = require('../models/JudgingScore');
 
 const router = express.Router();
 
@@ -29,6 +31,20 @@ router.get('/competitions', asyncHandler(async (req, res) => {
     .select('name type description venue date status schedule scoringRules')
     .sort({ type: 1 });
   res.json(competitions);
+}));
+
+router.get('/leaderboard/:type', asyncHandler(async (req, res) => {
+  const competition = await Competition.findOne({ type: req.params.type, resultsPublished: true }).lean();
+  if (!competition) return res.status(404).json({ error: 'Results are not published yet' });
+  if (competition.type === 'mcq') {
+    const rows = await Attempt.find({ roundNumber: 1, status: 'completed' }).populate('student', 'name rollNumber').populate('department', 'name').sort({ score: -1, timeTakenSeconds: 1 }).limit(100).lean();
+    return res.json({ competition: competition.name, items: rows.map((row, index) => ({ rank: index + 1, student: row.student?.name, rollNumber: row.student?.rollNumber, department: row.department?.name, score: row.score, maxScore: row.maxScore })) });
+  }
+  const scores = await JudgingScore.find({ competition: competition._id, status: 'approved' }).populate('student', 'name rollNumber').lean();
+  const byStudent = new Map();
+  scores.forEach((row) => { const key = row.student?._id?.toString(); if (!key) return; const current = byStudent.get(key) || { student: row.student, scores: [] }; current.scores.push(row.score); byStudent.set(key, current); });
+  const items = [...byStudent.values()].map((row) => ({ student: row.student.name, rollNumber: row.student.rollNumber, score: row.scores.reduce((sum, value) => sum + value, 0) / row.scores.length, maxScore: competition.scoringRules.reduce((sum, rule) => sum + rule.maxPoints, 0) })).sort((a, b) => b.score - a.score).map((row, index) => ({ ...row, rank: index + 1 }));
+  res.json({ competition: competition.name, items });
 }));
 
 router.get('/institution', (req, res) => {

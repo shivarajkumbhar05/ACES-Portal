@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const { Parser } = require('json2csv');
 const Student = require('../../models/Student');
 const Admin = require('../../models/Admin');
@@ -41,7 +42,7 @@ router.put('/assignments', asyncHandler(async (req, res) => {
   const operations = studentIds.map((student) => ({
     updateOne: {
       filter: { competition: competitionId, student },
-      update: { $set: { competition: competitionId, student, volunteer: volunteerId, status: 'assigned' } },
+      update: { $set: { competition: competitionId, student, volunteer: volunteerId, status: 'assigned' }, $setOnInsert: { checkInToken: crypto.randomBytes(18).toString('hex') } },
       upsert: true
     }
   }));

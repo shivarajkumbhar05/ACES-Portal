@@ -50,10 +50,22 @@ router.put('/', asyncHandler(async (req, res) => {
   if (competitionId) {
     await AttendanceAssignment.findOneAndUpdate(
       { competition: competitionId, student: student._id, volunteer: req.admin._id },
-      { phoneNumber: student.phoneNumber, status: present ? 'checked_in' : 'assigned' }
+      { phoneNumber: student.phoneNumber, status: present ? 'checked_in' : 'assigned', checkedInAt: present ? new Date() : null, isLate: present && competitionId ? false : undefined }
     );
   }
   res.json(record);
+}));
+
+router.get('/check-in/:token', asyncHandler(async (req, res) => {
+  const assignment = await AttendanceAssignment.findOne({ checkInToken: req.params.token }).populate('student', 'name rollNumber').populate('competition', 'name schedule');
+  if (!assignment) return res.status(404).json({ error: 'Check-in code is invalid or expired' });
+  const now = new Date();
+  const startsAt = assignment.competition?.schedule?.startsAt;
+  assignment.status = 'checked_in';
+  assignment.checkedInAt = now;
+  assignment.isLate = Boolean(startsAt && now > new Date(startsAt));
+  await assignment.save();
+  res.json({ student: assignment.student, competition: assignment.competition, checkedInAt: assignment.checkedInAt, isLate: assignment.isLate });
 }));
 
 module.exports = router;

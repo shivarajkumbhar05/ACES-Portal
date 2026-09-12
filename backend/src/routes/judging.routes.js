@@ -37,7 +37,7 @@ router.get('/participants', asyncHandler(async (req, res) => {
 }));
 
 router.put('/scores', asyncHandler(async (req, res) => {
-  const { studentId, competitionId, score, rubricScores = [], notes = '', submit = false } = req.body;
+  const { studentId, competitionId, score, rubricScores = [], notes = '', conflictDeclared = false, submit = false } = req.body;
   const competition = await Competition.findOne({ _id: competitionId, type: 'prompt_rush' });
   const maxScore = competition?.scoringRules?.reduce((total, rule) => total + rule.maxPoints, 0) || 1000;
   const numericScores = competition?.scoringRules?.map((rule) => ({
@@ -47,14 +47,14 @@ router.put('/scores', asyncHandler(async (req, res) => {
   })) || [];
   const numericScore = numericScores.reduce((total, item) => total + item.score, 0);
   const invalidRubric = numericScores.some((item, index) => item.score < 0 || item.score > competition.scoringRules[index].maxPoints);
-  if (!competition || !studentId || !Number.isFinite(numericScore) || numericScore < 0 || numericScore > maxScore || invalidRubric) {
+  if (!competition || !studentId || !Number.isFinite(numericScore) || numericScore < 0 || numericScore > maxScore || invalidRubric || (submit && conflictDeclared !== true)) {
     return res.status(400).json({ error: `A valid participant and score from 0 to ${maxScore} are required` });
   }
   const existing = await JudgingScore.findOne({ student: studentId, competition: competition._id, judge: req.admin._id });
   if (existing && ['locked', 'approved'].includes(existing.status)) return res.status(409).json({ error: 'This score is locked and requires admin approval to change' });
   const result = await JudgingScore.findOneAndUpdate(
     { student: studentId, competition: competition._id, judge: req.admin._id },
-    { student: studentId, competition: competition._id, judge: req.admin._id, score: numericScore, rubricScores: numericScores, notes: String(notes).slice(0, 2000), status: submit ? 'submitted' : 'draft', submittedAt: submit ? new Date() : existing?.submittedAt || null },
+    { student: studentId, competition: competition._id, judge: req.admin._id, score: numericScore, rubricScores: numericScores, notes: String(notes).slice(0, 2000), conflictDeclared: Boolean(conflictDeclared), status: submit ? 'submitted' : 'draft', submittedAt: submit ? new Date() : existing?.submittedAt || null },
     { new: true, upsert: true, runValidators: true }
   );
   res.json(result);

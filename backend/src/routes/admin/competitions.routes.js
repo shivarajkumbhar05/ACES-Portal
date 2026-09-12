@@ -40,4 +40,10 @@ router.post('/:id/pause', asyncHandler(async (req, res) => {
   res.json(competition);
 }));
 
+router.post('/:id/publish-results', asyncHandler(async (req, res) => {
+  const competition = await Competition.findByIdAndUpdate(req.params.id, { resultsPublished: true, resultsPublishedAt: new Date() }, { new: true });
+  if (!competition) return res.status(404).json({ error: 'Competition not found' });
+  res.json(competition);
+}));
+
 module.exports = router;

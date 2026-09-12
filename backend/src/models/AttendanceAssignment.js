@@ -6,7 +6,10 @@ const attendanceAssignmentSchema = new Schema(
     student: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
     volunteer: { type: Schema.Types.ObjectId, ref: 'Admin', required: true },
     phoneNumber: { type: String, trim: true, maxlength: 20, default: '' },
-    status: { type: String, enum: ['assigned', 'checked_in'], default: 'assigned' }
+    status: { type: String, enum: ['assigned', 'checked_in'], default: 'assigned' },
+    checkInToken: { type: String, unique: true, sparse: true },
+    checkedInAt: { type: Date, default: null },
+    isLate: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

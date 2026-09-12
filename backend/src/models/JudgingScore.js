@@ -19,6 +19,7 @@ const judgingScoreSchema = new Schema(
     score: { type: Number, required: true, min: 0, max: 1000 },
     rubricScores: { type: [rubricScoreSchema], default: [] },
     notes: { type: String, trim: true, maxlength: 2000, default: '' }
+    ,conflictDeclared: { type: Boolean, default: false }
     ,status: { type: String, enum: ['draft', 'submitted', 'locked', 'approved', 'rejected'], default: 'draft' }
     ,submittedAt: { type: Date, default: null }
     ,lockedAt: { type: Date, default: null }
