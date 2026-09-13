@@ -1,5 +1,8 @@
 const express = require('express');
 const Competition = require('../../models/Competition');
+const AttendanceAssignment = require('../../models/AttendanceAssignment');
+const JudgingScore = require('../../models/JudgingScore');
+const AuditLog = require('../../models/AuditLog');
 const { requireAdmin, requireSuperAdmin } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { isNonEmptyString } = require('../../utils/validators');
@@ -41,8 +44,22 @@ router.post('/:id/pause', asyncHandler(async (req, res) => {
 }));
 
 router.post('/:id/publish-results', asyncHandler(async (req, res) => {
-  const competition = await Competition.findByIdAndUpdate(req.params.id, { resultsPublished: true, resultsPublishedAt: new Date() }, { new: true });
+  const competition = await Competition.findById(req.params.id);
   if (!competition) return res.status(404).json({ error: 'Competition not found' });
+  if (competition.type === 'prompt_rush') {
+    const assignments = await AttendanceAssignment.find({ competition: competition._id }).select('student').lean();
+    const studentIds = assignments.map((item) => item.student);
+    if (!studentIds.length) return res.status(409).json({ error: 'Allocate Prompt Rush participants before publishing results' });
+    const approvedScores = await JudgingScore.find({ competition: competition._id, student: { $in: studentIds }, status: 'approved' }).select('student').lean();
+    const approvedByStudent = new Map();
+    approvedScores.forEach((item) => approvedByStudent.set(item.student.toString(), (approvedByStudent.get(item.student.toString()) || 0) + 1));
+    const incomplete = studentIds.filter((studentId) => (approvedByStudent.get(studentId.toString()) || 0) !== 2).length;
+    if (incomplete) return res.status(409).json({ error: `${incomplete} allocated participant${incomplete === 1 ? '' : 's'} need exactly two approved judge scores before results can be published` });
+  }
+  competition.resultsPublished = true;
+  competition.resultsPublishedAt = new Date();
+  await competition.save();
+  await AuditLog.create({ admin: req.admin._id, action: 'competition.results_published', details: { competitionId: competition._id, type: competition.type }, ipAddress: req.ip });
   res.json(competition);
 }));
 

@@ -43,7 +43,7 @@ router.get('/leaderboard/:type', asyncHandler(async (req, res) => {
   const scores = await JudgingScore.find({ competition: competition._id, status: 'approved' }).populate('student', 'name rollNumber').lean();
   const byStudent = new Map();
   scores.forEach((row) => { const key = row.student?._id?.toString(); if (!key) return; const current = byStudent.get(key) || { student: row.student, scores: [] }; current.scores.push(row.score); byStudent.set(key, current); });
-  const items = [...byStudent.values()].map((row) => ({ student: row.student.name, rollNumber: row.student.rollNumber, score: row.scores.reduce((sum, value) => sum + value, 0) / row.scores.length, maxScore: competition.scoringRules.reduce((sum, rule) => sum + rule.maxPoints, 0) })).sort((a, b) => b.score - a.score).map((row, index) => ({ ...row, rank: index + 1 }));
+  const items = [...byStudent.values()].filter((row) => row.scores.length === 2).map((row) => ({ student: row.student.name, rollNumber: row.student.rollNumber, score: row.scores.reduce((sum, value) => sum + value, 0) / 2, maxScore: competition.scoringRules.reduce((sum, rule) => sum + rule.maxPoints, 0) })).sort((a, b) => b.score - a.score).map((row, index) => ({ ...row, rank: index + 1 }));
   res.json({ competition: competition.name, items });
 }));
 

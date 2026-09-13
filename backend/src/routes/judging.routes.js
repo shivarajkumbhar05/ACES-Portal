@@ -15,7 +15,7 @@ router.use(requireAdmin, requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN
 router.get('/participants', asyncHandler(async (req, res) => {
   const students = await Student.find().populate('department', 'name').sort({ name: 1 }).lean();
   const competition = await Competition.findOne({ _id: req.query.competition, type: 'prompt_rush' });
-  const assignments = competition ? await AttendanceAssignment.find({ competition: competition._id }).select('student').lean() : [];
+  const assignments = competition ? await AttendanceAssignment.find({ competition: competition._id, judges: req.admin._id }).select('student').lean() : [];
   const allocatedIds = new Set(assignments.map((item) => item.student.toString()));
   const scores = competition ? await JudgingScore.find({ competition: competition._id, judge: req.admin._id }).lean() : [];
   const scoreByStudent = new Map(scores.map((item) => [item.student.toString(), item]));
@@ -70,6 +70,31 @@ router.post('/scores/:scoreId/lock', asyncHandler(async (req, res) => {
 router.get('/review', requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN), asyncHandler(async (req, res) => {
   const scores = await JudgingScore.find().populate('student', 'name rollNumber').populate('judge', 'name username').populate('competition', 'name type scoringRules').sort({ updatedAt: -1 }).lean();
   res.json(scores);
+}));
+
+router.get('/review/comparison', requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const scores = await JudgingScore.find({ competition: { $exists: true } })
+    .populate('student', 'name rollNumber department')
+    .populate('judge', 'name username')
+    .populate('competition', 'name type scoringRules')
+    .sort({ student: 1, updatedAt: -1 })
+    .lean();
+  const groups = new Map();
+  scores.forEach((score) => {
+    const key = `${score.competition?._id}:${score.student?._id}`;
+    const group = groups.get(key) || { student: score.student, competition: score.competition, scores: [] };
+    group.scores.push(score);
+    groups.set(key, group);
+  });
+  res.json([...groups.values()].map((group) => {
+    const approvedScores = group.scores.filter((score) => score.status === 'approved');
+    return {
+      ...group,
+      approvedCount: approvedScores.length,
+      average: approvedScores.length === 2 ? approvedScores.reduce((sum, score) => sum + score.score, 0) / 2 : null,
+      ready: approvedScores.length === 2
+    };
+  }));
 }));
 
 router.post('/review/:scoreId/:decision', requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN), asyncHandler(async (req, res) => {
