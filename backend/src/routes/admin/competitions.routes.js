@@ -86,6 +86,9 @@ router.post('/:id/publish-results', asyncHandler(async (req, res) => {
     const assignments = await AttendanceAssignment.find({ competition: competition._id }).select('student').lean();
     const studentIds = assignments.map((item) => item.student);
     if (!studentIds.length) return res.status(409).json({ error: 'Allocate Prompt Rush participants before publishing results' });
+    const totalScores = await JudgingScore.find({ competition: competition._id, student: { $in: studentIds } }).select('student status').lean();
+    const nonApproved = totalScores.filter((score) => score.status !== 'approved');
+    if (nonApproved.length) return res.status(409).json({ error: 'All Prompt Rush judge scores must be approved by the admin before publishing results' });
     const approvedScores = await JudgingScore.find({ competition: competition._id, student: { $in: studentIds }, status: 'approved' }).select('student').lean();
     const approvedByStudent = new Map();
     approvedScores.forEach((item) => approvedByStudent.set(item.student.toString(), (approvedByStudent.get(item.student.toString()) || 0) + 1));
@@ -95,12 +98,16 @@ router.post('/:id/publish-results', asyncHandler(async (req, res) => {
 
   let winners = [];
   if (competition.type === 'mcq') {
-    const top = await Attempt.find({ roundNumber: 1, status: 'completed' }).populate('student', 'name rollNumber').populate('department', 'name').sort({ score: -1, timeTakenSeconds: 1 }).limit(1).lean();
-    if (top[0]?.student) {
-      winners = [{ name: top[0].student.name, rollNumber: top[0].student.rollNumber, department: top[0].department?.name || '', score: top[0].score, rank: 1 }];
-    }
+    const top = await Attempt.find({ roundNumber: 1, status: 'completed' }).populate('student', 'name rollNumber').populate('department', 'name').sort({ score: -1, timeTakenSeconds: 1 }).limit(5).lean();
+    winners = top.map((row, index) => ({
+      name: row.student?.name,
+      rollNumber: row.student?.rollNumber,
+      department: row.department?.name || '',
+      score: row.score,
+      rank: index + 1
+    }));
   } else {
-    const scores = await JudgingScore.find({ competition: competition._id, status: 'approved' }).populate('student', 'name rollNumber').lean();
+    const scores = await JudgingScore.find({ competition: competition._id, status: 'approved' }).populate('student', 'name rollNumber department').lean();
     const byStudent = new Map();
     scores.forEach((row) => {
       const key = row.student?._id?.toString();
@@ -114,12 +121,13 @@ router.post('/:id/publish-results', asyncHandler(async (req, res) => {
       .map((row) => ({
         name: row.student.name,
         rollNumber: row.student.rollNumber,
-        department: row.student.department || '',
+        department: row.student.department ? (typeof row.student.department === 'object' ? row.student.department.name : String(row.student.department)) : '',
         score: row.scores.reduce((sum, v) => sum + v, 0) / row.scores.length,
         rank: 1
       }))
-      .sort((a, b) => b.score - a.score);
-    if (items[0]) winners = [items[0]];
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+    winners = items.map((item, index) => ({ ...item, rank: index + 1 }));
   }
 
   competition.resultsPublished = true;
