@@ -350,18 +350,8 @@ router.post(
     res.json({
       student: { name: student.name, rollNumber: student.rollNumber, department: student.department.name },
       roundNumber: attempt.roundNumber,
-      totalQuestions: attempt.totalQuestions,
-      attemptedQuestions: attempt.attemptedQuestions,
-      correctAnswers: attempt.correctAnswers,
-      wrongAnswers: attempt.wrongAnswers,
-      unanswered: attempt.unanswered,
       status: attempt.status,
-      violationReason: attempt.violationReason,
-      // MCQ scores are committee-only; students receive completion statistics without marks.
-      score: null,
-      maxScore: null,
-      percentage: null,
-      timeTakenSeconds: attempt.timeTakenSeconds
+      message: 'Thank you for participating in the ACES Quiz. Your response has been recorded.'
     });
   })
 );
@@ -388,19 +378,9 @@ router.get(
     res.json({
       student: { name: student.name, rollNumber: student.rollNumber, department: student.department.name },
       roundNumber: attempt.roundNumber,
-      totalQuestions: attempt.totalQuestions,
-      attemptedQuestions: attempt.attemptedQuestions,
-      correctAnswers: attempt.correctAnswers,
-      wrongAnswers: attempt.wrongAnswers,
-      unanswered: attempt.unanswered,
       status: attempt.status,
-      violationReason: attempt.violationReason,
-      // MCQ scores are available in the admin Results panel, never in the student portal.
-      score: null,
-      maxScore: null,
-      percentage: null,
-      timeTakenSeconds: attempt.timeTakenSeconds,
-      qualification
+      qualification,
+      message: 'Thank you for participating in the ACES Quiz. Your response has been recorded.'
     });
   })
 );
