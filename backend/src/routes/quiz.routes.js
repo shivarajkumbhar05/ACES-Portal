@@ -20,6 +20,11 @@ function getIO(req) {
   return req.app.get('io');
 }
 
+async function requireActiveRound(attempt) {
+  const round = await QuizRound.findById(attempt.round).select('status').lean();
+  return round?.status === ROUND_STATUS.ACTIVE;
+}
+
 /**
  * Builds the student-safe view of the current question set: never includes
  * the correct answer, and option labels are re-mapped through the attempt's
@@ -205,6 +210,7 @@ router.get(
   requireStudentAttempt,
   asyncHandler(async (req, res) => {
     const { attempt } = req;
+    if (!(await requireActiveRound(attempt))) return res.status(410).json({ error: 'round_ended', message: 'This competition has ended.' });
     if (attempt.status !== ATTEMPT_STATUS.IN_PROGRESS) {
       return res.status(409).json({ error: 'This attempt has already been submitted' });
     }
@@ -232,6 +238,7 @@ router.post(
   requireStudentAttempt,
   asyncHandler(async (req, res) => {
     const { attempt } = req;
+    if (!(await requireActiveRound(attempt))) return res.status(410).json({ error: 'round_ended', message: 'This competition has ended.' });
     const { questionId, position } = req.body;
 
     if (attempt.status !== ATTEMPT_STATUS.IN_PROGRESS) {
@@ -279,6 +286,7 @@ router.post(
   requireStudentAttempt,
   asyncHandler(async (req, res) => {
     const { attempt } = req;
+    if (!(await requireActiveRound(attempt))) return res.status(410).json({ error: 'round_ended', message: 'This competition has ended.' });
     const { questionId, flagged } = req.body;
     if (attempt.status !== ATTEMPT_STATUS.IN_PROGRESS) return res.status(409).json({ error: 'This attempt has already been submitted' });
     if (!isValidObjectId(questionId) || typeof flagged !== 'boolean') return res.status(400).json({ error: 'Invalid question flag' });
@@ -304,6 +312,7 @@ router.post(
     }
 
     const round = await QuizRound.findById(attempt.round);
+    if (round.status !== ROUND_STATUS.ACTIVE) return res.status(410).json({ error: 'round_ended', message: 'This competition has ended.' });
     const now = new Date();
     const secondsUsed = Math.round((now.getTime() - new Date(attempt.startedAt).getTime()) / 1000);
     // Clamp to the time limit in case of clock skew - a student can never be

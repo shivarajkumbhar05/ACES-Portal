@@ -21,6 +21,8 @@ const competitionSchema = new Schema(
       startsAt: { type: Date },
       endsAt: { type: Date },
       isPaused: { type: Boolean, default: false },
+      isEnded: { type: Boolean, default: false },
+      endedAt: { type: Date, default: null },
       pauseReason: { type: String, trim: true, maxlength: 240, default: '' }
     },
     scoringRules: { type: [scoringRuleSchema], default: [] },

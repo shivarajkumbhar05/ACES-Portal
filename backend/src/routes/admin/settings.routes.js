@@ -1,10 +1,12 @@
 const express = require('express');
 const QuizRound = require('../../models/QuizRound');
+const Attempt = require('../../models/Attempt');
 const AuditLog = require('../../models/AuditLog');
 const { requireAdmin, requireSuperAdmin } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { isNonEmptyString } = require('../../utils/validators');
 const { ROUND_STATUS, ROUND_TYPES } = require('../../config/constants');
+const { finalizeAttemptScore } = require('../../services/scoring.service');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -137,6 +139,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const round = await QuizRound.findOne({ roundNumber: Number(req.params.roundNumber) });
     if (!round) return res.status(404).json({ error: 'Round not found' });
+    if (round.status === ROUND_STATUS.ENDED) return res.status(409).json({ error: 'This round has ended and cannot be restarted' });
     round.status = ROUND_STATUS.ACTIVE;
     round.startedAt = new Date();
     await round.save();
@@ -154,6 +157,15 @@ router.post(
     round.status = ROUND_STATUS.ENDED;
     round.endedAt = new Date();
     await round.save();
+    const activeAttempts = await Attempt.find({ round: round._id, status: 'in_progress' });
+    await Promise.all(activeAttempts.map(async (attempt) => {
+      const now = new Date();
+      attempt.timeTakenSeconds = Math.min(Math.max(0, Math.round((now.getTime() - new Date(attempt.startedAt).getTime()) / 1000)), round.timeLimitMinutes * 60);
+      attempt.submittedAt = now;
+      attempt.status = 'completed';
+      await finalizeAttemptScore(attempt, round);
+      await attempt.save();
+    }));
     await AuditLog.create({ admin: req.admin._id, action: 'round.end', details: { roundNumber: round.roundNumber }, ipAddress: req.ip });
     res.json(round.toSafeJSON());
   })

@@ -24,6 +24,10 @@ export default function CompetitionsPanel() {
   async function togglePause(item) {
     try { await api.post(`/admin/competitions/${item._id}/pause`, { paused: !item.schedule?.isPaused, reason: item.schedule?.isPaused ? '' : 'Paused by administrator' }); load(); } catch (err) { setError(apiErrorMessage(err)); }
   }
+  async function endCompetition(item) {
+    if (!window.confirm(`End ${item.name}? Students will no longer be able to participate.`)) return;
+    try { await api.post(`/admin/competitions/${item._id}/end`); load(); } catch (err) { setError(apiErrorMessage(err)); }
+  }
   async function publish(item) {
     try { await api.post(`/admin/competitions/${item._id}/publish-results`); load(); } catch (err) { setError(apiErrorMessage(err)); }
   }

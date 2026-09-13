@@ -1,5 +1,6 @@
 const express = require('express');
 const Competition = require('../../models/Competition');
+const QuizRound = require('../../models/QuizRound');
 const AttendanceAssignment = require('../../models/AttendanceAssignment');
 const JudgingScore = require('../../models/JudgingScore');
 const AuditLog = require('../../models/AuditLog');
@@ -43,9 +44,28 @@ router.post('/:id/pause', asyncHandler(async (req, res) => {
   res.json(competition);
 }));
 
+router.post('/:id/end', asyncHandler(async (req, res) => {
+  const competition = await Competition.findById(req.params.id);
+  if (!competition) return res.status(404).json({ error: 'Competition not found' });
+  if (competition.schedule?.isEnded) return res.status(409).json({ error: 'Competition has already ended' });
+  competition.schedule.isEnded = true;
+  competition.schedule.isPaused = true;
+  competition.schedule.endedAt = new Date();
+  competition.schedule.pauseReason = 'Competition ended by administrator';
+  await competition.save();
+  await AuditLog.create({ admin: req.admin._id, action: 'competition.end', details: { competitionId: competition._id, type: competition.type }, ipAddress: req.ip });
+  res.json(competition);
+}));
+
 router.post('/:id/publish-results', asyncHandler(async (req, res) => {
   const competition = await Competition.findById(req.params.id);
   if (!competition) return res.status(404).json({ error: 'Competition not found' });
+  if (competition.type === 'mcq') {
+    const round = await QuizRound.findOne({ roundNumber: 1 }).select('status').lean();
+    if (round?.status !== 'ended') return res.status(409).json({ error: 'End the MCQ round before publishing results' });
+  } else if (!competition.schedule?.isEnded) {
+    return res.status(409).json({ error: 'End the Prompt Rush competition before publishing results' });
+  }
   if (competition.type === 'prompt_rush') {
     const assignments = await AttendanceAssignment.find({ competition: competition._id }).select('student').lean();
     const studentIds = assignments.map((item) => item.student);
