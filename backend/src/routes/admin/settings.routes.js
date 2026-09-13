@@ -139,9 +139,9 @@ router.post(
   asyncHandler(async (req, res) => {
     const round = await QuizRound.findOne({ roundNumber: Number(req.params.roundNumber) });
     if (!round) return res.status(404).json({ error: 'Round not found' });
-    if (round.status === ROUND_STATUS.ENDED) return res.status(409).json({ error: 'This round has ended and cannot be restarted' });
     round.status = ROUND_STATUS.ACTIVE;
     round.startedAt = new Date();
+    round.endedAt = null;
     await round.save();
     await AuditLog.create({ admin: req.admin._id, action: 'round.start', details: { roundNumber: round.roundNumber }, ipAddress: req.ip });
     res.json(round.toSafeJSON());
@@ -168,6 +168,20 @@ router.post(
     }));
     await AuditLog.create({ admin: req.admin._id, action: 'round.end', details: { roundNumber: round.roundNumber }, ipAddress: req.ip });
     res.json(round.toSafeJSON());
+  })
+);
+
+router.delete(
+  '/:roundNumber',
+  requireSuperAdmin,
+  asyncHandler(async (req, res) => {
+    const round = await QuizRound.findOne({ roundNumber: Number(req.params.roundNumber) });
+    if (!round) return res.status(404).json({ error: 'Round not found' });
+    const attemptCount = await Attempt.countDocuments({ round: round._id });
+    if (attemptCount > 0) return res.status(409).json({ error: 'Delete attempts or reset the round before deleting this round' });
+    await QuizRound.deleteOne({ _id: round._id });
+    await AuditLog.create({ admin: req.admin._id, action: 'round.delete', details: { roundNumber: round.roundNumber }, ipAddress: req.ip });
+    res.json({ ok: true, deletedRoundNumber: round.roundNumber });
   })
 );
 

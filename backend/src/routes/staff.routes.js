@@ -33,6 +33,39 @@ router.post('/', asyncHandler(async (req, res) => {
   res.status(201).json({ id: staff._id, username: staff.username, name: staff.name, role: staff.role, isActive: staff.isActive });
 }));
 
+router.get('/notifications', asyncHandler(async (req, res) => {
+  const staff = await Admin.find().select('name username role notifications timeClock').sort({ createdAt: -1 }).lean();
+  res.json(staff);
+}));
+
+router.post('/notifications', asyncHandler(async (req, res) => {
+  const { message, role } = req.body;
+  if (!isNonEmptyString(message, 280)) return res.status(400).json({ error: 'Notification message is required' });
+  const roleFilter = role && [ADMIN_ROLES.JUDGE, ADMIN_ROLES.VOLUNTEER, ADMIN_ROLES.ADMIN].includes(role) ? role : null;
+  const query = roleFilter ? { role: roleFilter } : { role: { $in: [ADMIN_ROLES.JUDGE, ADMIN_ROLES.VOLUNTEER, ADMIN_ROLES.ADMIN] } };
+  const staff = await Admin.find(query).select('_id');
+  const payload = { message: message.trim(), sentBy: req.admin._id, createdAt: new Date(), isRead: false };
+  await Admin.updateMany(query, { $push: { notifications: payload } });
+  await Admin.findById(req.admin._id).select('_id').lean();
+  res.json({ ok: true, sentTo: staff.length, message });
+}));
+
+router.post('/:id/time-clock', asyncHandler(async (req, res) => {
+  const staff = await Admin.findById(req.params.id);
+  if (!staff) return res.status(404).json({ error: 'Staff account not found' });
+  const now = new Date();
+  if (staff.timeClock?.state === 'in') {
+    staff.timeClock.state = 'out';
+    staff.timeClock.clockedOutAt = now;
+  } else {
+    staff.timeClock.state = 'in';
+    staff.timeClock.clockedInAt = now;
+    staff.timeClock.clockedOutAt = null;
+  }
+  await staff.save();
+  res.json(staff.toObject({ getters: true }));
+}));
+
 router.patch('/:id/status', asyncHandler(async (req, res) => {
   const staff = await Admin.findByIdAndUpdate(req.params.id, { isActive: Boolean(req.body.isActive) }, { new: true }).select('-passwordHash');
   if (!staff) return res.status(404).json({ error: 'Staff account not found' });

@@ -81,8 +81,28 @@ function RoundCard({ roundNumber, initial, onSaved }) {
       const res = await api.post(`/admin/rounds/${roundNumber}/${action}`);
       setRound(res.data);
       onSaved?.(res.data);
+      if (action === 'start') setMsg('Round started.');
+      if (action === 'end') setMsg('Round ended.');
     } catch (err) {
       setError(apiErrorMessage(err, `Could not ${action} the round.`));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteRound() {
+    if (!round || !window.confirm(`Delete Round ${roundNumber}? This requires the round to be empty.`)) return;
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      await api.delete(`/admin/rounds/${roundNumber}`);
+      setRound(null);
+      setForm(emptyFormFor(roundNumber, null));
+      setMsg('Round deleted. You can create a new round from this form.');
+      onSaved?.(null);
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Could not delete the round.'));
     } finally {
       setBusy(false);
     }
@@ -165,6 +185,16 @@ function RoundCard({ roundNumber, initial, onSaved }) {
             <rect x="6" y="6" width="12" height="12" rx="2" />
           </svg>
           End Round
+        </button>
+        <button
+          onClick={handleDeleteRound}
+          disabled={busy || !round}
+          className="group inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-700"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12M9 7V4h6v3m-8 4l1 7h8l1-7" />
+          </svg>
+          Delete Round
         </button>
 
         {isActive && (

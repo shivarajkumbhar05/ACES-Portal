@@ -92,10 +92,41 @@ router.post('/:id/publish-results', asyncHandler(async (req, res) => {
     const incomplete = studentIds.filter((studentId) => (approvedByStudent.get(studentId.toString()) || 0) !== 2).length;
     if (incomplete) return res.status(409).json({ error: `${incomplete} allocated participant${incomplete === 1 ? '' : 's'} need exactly two approved judge scores before results can be published` });
   }
+
+  let winners = [];
+  if (competition.type === 'mcq') {
+    const top = await Attempt.find({ roundNumber: 1, status: 'completed' }).populate('student', 'name rollNumber').populate('department', 'name').sort({ score: -1, timeTakenSeconds: 1 }).limit(1).lean();
+    if (top[0]?.student) {
+      winners = [{ name: top[0].student.name, rollNumber: top[0].student.rollNumber, department: top[0].department?.name || '', score: top[0].score, rank: 1 }];
+    }
+  } else {
+    const scores = await JudgingScore.find({ competition: competition._id, status: 'approved' }).populate('student', 'name rollNumber').lean();
+    const byStudent = new Map();
+    scores.forEach((row) => {
+      const key = row.student?._id?.toString();
+      if (!key) return;
+      const current = byStudent.get(key) || { student: row.student, scores: [] };
+      current.scores.push(row.score);
+      byStudent.set(key, current);
+    });
+    const items = [...byStudent.values()]
+      .filter((row) => row.scores.length >= 2)
+      .map((row) => ({
+        name: row.student.name,
+        rollNumber: row.student.rollNumber,
+        department: row.student.department || '',
+        score: row.scores.reduce((sum, v) => sum + v, 0) / row.scores.length,
+        rank: 1
+      }))
+      .sort((a, b) => b.score - a.score);
+    if (items[0]) winners = [items[0]];
+  }
+
   competition.resultsPublished = true;
   competition.resultsPublishedAt = new Date();
+  competition.winners = winners;
   await competition.save();
-  await AuditLog.create({ admin: req.admin._id, action: 'competition.results_published', details: { competitionId: competition._id, type: competition.type }, ipAddress: req.ip });
+  await AuditLog.create({ admin: req.admin._id, action: 'competition.results_published', details: { competitionId: competition._id, type: competition.type, winners }, ipAddress: req.ip });
   res.json(competition);
 }));
 

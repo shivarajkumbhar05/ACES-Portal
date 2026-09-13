@@ -28,6 +28,7 @@ const competitionSchema = new Schema(
     scoringRules: { type: [scoringRuleSchema], default: [] },
     resultsPublished: { type: Boolean, default: false },
     resultsPublishedAt: { type: Date, default: null },
+    winners: { type: [{ name: String, rollNumber: String, department: String, score: Number, rank: Number }], default: [] },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Admin', required: true }
   },
   { timestamps: true }
