@@ -4,20 +4,21 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 
 const ADMIN_NAV_ITEMS = [
   { to: '/admin/control-room', label: 'Live Control Room', icon: 'grid' },
-  { to: '/admin', label: 'Dashboard', end: true, icon: 'grid' },
-  { to: '/admin/questions', label: 'Questions', icon: 'list' },
+  { to: '/admin', label: 'MESA Dashboard', end: true, icon: 'grid' },
+  { to: '/admin/questions', label: 'Question Bank', icon: 'list' },
   { to: '/admin/upload', label: 'Bulk Upload', icon: 'upload' },
   { to: '/admin/rounds', label: 'Round Settings', icon: 'settings' },
-  { to: '/admin/results', label: 'Results', icon: 'chart' },
-  { to: '/admin/qualification', label: 'Round 2 Qualification', icon: 'filter' },
-  { to: '/admin/participants', label: 'Participants', icon: 'users' },
-  { to: '/admin/reports', label: 'Reports', icon: 'doc' },
-  { to: '/admin/staff', label: 'Staff Accounts', icon: 'users' },
   { to: '/admin/competitions', label: 'Competitions', icon: 'grid' },
-  { to: '/admin/attendance-allocation', label: 'Attendance Allocation', icon: 'users' },
-  { to: '/admin/schedules', label: 'Schedules', icon: 'settings' },
+  { to: '/admin/schedules', label: 'Schedules', icon: 'calendar' },
+  { to: '/admin/qualification', label: 'Qualification', icon: 'filter' },
+  { to: '/admin/participants', label: 'Participants', icon: 'users' },
+  { to: '/admin/staff', label: 'Staff Accounts', icon: 'users' },
+  { to: '/admin/judging', label: 'Advanced Judging', icon: 'chart' },
   { to: '/admin/judging-review', label: 'Judging Review', icon: 'chart' },
+  { to: '/admin/results', label: 'Results', icon: 'chart' },
   { to: '/admin/publication', label: 'Publish Results', icon: 'chart' },
+  { to: '/admin/reports', label: 'Reports', icon: 'doc' },
+  { to: '/admin/attendance-allocation', label: 'Attendance Allocation', icon: 'users' },
   { to: '/admin/profile', label: 'Profile', icon: 'settings' }
 ];
 
@@ -43,13 +44,13 @@ export default function AdminLayout() {
       <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
         <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 text-sm font-bold text-white shadow-sm">
-            A
+            M
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              ACES Quiz
+              MESA
             </p>
-            <p className="text-sm font-bold text-brand-700">Admin Console</p>
+            <p className="text-sm font-bold text-brand-700">Admin Panel</p>
           </div>
         </div>
 
@@ -83,9 +84,9 @@ export default function AdminLayout() {
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur md:hidden">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 text-xs font-bold text-white">
-              A
+              M
             </div>
-            <p className="text-base font-bold text-brand-700">ACES Admin</p>
+            <p className="text-base font-bold text-brand-700">MESA Admin</p>
           </div>
           <button
             onClick={() => setMobileOpen((v) => !v)}

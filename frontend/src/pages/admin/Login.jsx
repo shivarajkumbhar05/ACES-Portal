@@ -24,7 +24,8 @@ export default function Login({ staffMode = false }) {
     const result = await login(username, password);
     setSubmitting(false);
     if (result.ok) {
-      navigate(location.state?.from || (result.role === 'judge' ? '/admin/judging' : result.role === 'volunteer' ? '/admin/attendance' : '/admin'), { replace: true });
+      const target = location.state?.from || (result.role === 'judge' ? '/admin/judging' : result.role === 'volunteer' ? '/admin/attendance' : '/admin');
+      navigate(target, { replace: true });
     } else {
       setError(result.message);
     }
