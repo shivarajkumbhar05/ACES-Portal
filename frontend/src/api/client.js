@@ -33,6 +33,9 @@ api.interceptors.response.use(
         window.location.href = '/admin/login';
       }
     }
+    if (status === 429) {
+      err.userMessage = 'The server is handling too many quiz entry requests right now. Please wait and retry.';
+    }
     return Promise.reject(err);
   }
 );

@@ -33,6 +33,7 @@ export default function JoinQuiz() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    if (submitting) return;
     setSubmitting(true);
     try {
       const res = await api.post('/quiz/verify', form);
@@ -40,7 +41,12 @@ export default function JoinQuiz() {
       localStorage.setItem('aces_attempt_meta', JSON.stringify(res.data.attempt));
       navigate('/quiz/attempt');
     } catch (err) {
-      setError(apiErrorMessage(err, 'Could not start the quiz. Please check your details.'));
+      const message = apiErrorMessage(err, 'Could not start the quiz. Please check your details.');
+      if (err.response?.status === 429 || err.response?.status === 503) {
+        setError('The quiz entry is under heavy load. Please wait a moment and try again.');
+      } else {
+        setError(message);
+      }
     } finally {
       setSubmitting(false);
     }
