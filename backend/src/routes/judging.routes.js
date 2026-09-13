@@ -8,6 +8,7 @@ const { requireAdmin, requireRoles } = require('../middleware/auth');
 const AuditLog = require('../models/AuditLog');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { ADMIN_ROLES } = require('../config/constants');
+const { getCompetitionLifecycleError } = require('../utils/competitionLifecycle');
 
 const router = express.Router();
 router.use(requireAdmin, requireRoles(ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.ADMIN, ADMIN_ROLES.JUDGE));
@@ -39,6 +40,9 @@ router.get('/participants', asyncHandler(async (req, res) => {
 router.put('/scores', asyncHandler(async (req, res) => {
   const { studentId, competitionId, score, rubricScores = [], notes = '', conflictDeclared = false, submit = false } = req.body;
   const competition = await Competition.findOne({ _id: competitionId, type: 'prompt_rush' });
+  if (!competition) return res.status(400).json({ error: 'A valid Prompt Rush competition is required' });
+  const lifecycleError = getCompetitionLifecycleError(competition);
+  if (lifecycleError) return res.status(403).json({ error: 'competition_unavailable', message: lifecycleError });
   const maxScore = competition?.scoringRules?.reduce((total, rule) => total + rule.maxPoints, 0) || 1000;
   const numericScores = competition?.scoringRules?.map((rule) => ({
     ruleId: rule._id,
@@ -47,7 +51,7 @@ router.put('/scores', asyncHandler(async (req, res) => {
   })) || [];
   const numericScore = numericScores.reduce((total, item) => total + item.score, 0);
   const invalidRubric = numericScores.some((item, index) => item.score < 0 || item.score > competition.scoringRules[index].maxPoints);
-  if (!competition || !studentId || !Number.isFinite(numericScore) || numericScore < 0 || numericScore > maxScore || invalidRubric || (submit && conflictDeclared !== true)) {
+  if (!studentId || !Number.isFinite(numericScore) || numericScore < 0 || numericScore > maxScore || invalidRubric || (submit && conflictDeclared !== true)) {
     return res.status(400).json({ error: `A valid participant and score from 0 to ${maxScore} are required` });
   }
   const existing = await JudgingScore.findOne({ student: studentId, competition: competition._id, judge: req.admin._id });

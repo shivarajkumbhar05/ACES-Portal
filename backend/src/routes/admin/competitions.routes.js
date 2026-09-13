@@ -18,18 +18,32 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, type, description = '', date, venue = '', status = 'draft', schedule = {}, scoringRules = [] } = req.body;
+  const { name, type, quizRoundId, description = '', date, venue = '', status = 'draft', schedule = {}, scoringRules = [] } = req.body;
   if (!isNonEmptyString(name, 160) || !Object.values(COMPETITION_TYPES).includes(type) || !['draft', 'published', 'archived'].includes(status)) {
     return res.status(400).json({ error: 'Name, competition type, and valid status are required' });
   }
   if (await Competition.exists({ type })) return res.status(409).json({ error: `The ${type} competition already exists` });
-  const competition = await Competition.create({ name: name.trim(), type, description, date: date || undefined, venue, status, schedule, scoringRules, createdBy: req.admin._id });
+  let quizRound = null;
+  if (type === COMPETITION_TYPES.MCQ) {
+    quizRound = quizRoundId ? await QuizRound.findById(quizRoundId).select('_id').lean() : await QuizRound.findOne({ roundNumber: 1 }).select('_id').lean();
+    if (!quizRound) return res.status(400).json({ error: 'MCQ competitions require a configured quiz round' });
+  } else if (quizRoundId) {
+    return res.status(400).json({ error: 'Only MCQ competitions can be linked to a quiz round' });
+  }
+  const competition = await Competition.create({ name: name.trim(), type, quizRound: quizRound?._id || null, description, date: date || undefined, venue, status, schedule, scoringRules, createdBy: req.admin._id });
   res.status(201).json(competition);
 }));
 
 router.patch('/:id', asyncHandler(async (req, res) => {
-  const allowed = ['name', 'description', 'date', 'venue', 'status', 'schedule', 'scoringRules'];
+  const allowed = ['name', 'description', 'date', 'venue', 'status', 'schedule', 'scoringRules', 'quizRound'];
   const updates = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowed.includes(key)));
+  const existingCompetition = await Competition.findById(req.params.id).select('type').lean();
+  if (!existingCompetition) return res.status(404).json({ error: 'Competition not found' });
+  if (updates.quizRound) {
+    if (existingCompetition.type !== COMPETITION_TYPES.MCQ) return res.status(400).json({ error: 'Only MCQ competitions can be linked to a quiz round' });
+    const round = await QuizRound.findById(updates.quizRound).select('_id').lean();
+    if (!round) return res.status(400).json({ error: 'Quiz round not found' });
+  }
   const competition = await Competition.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
   if (!competition) return res.status(404).json({ error: 'Competition not found' });
   res.json(competition);
@@ -77,7 +91,7 @@ router.post('/:id/publish-results', asyncHandler(async (req, res) => {
   const competition = await Competition.findById(req.params.id);
   if (!competition) return res.status(404).json({ error: 'Competition not found' });
   if (competition.type === 'mcq') {
-    const round = await QuizRound.findOne({ roundNumber: 1 }).select('status').lean();
+    const round = await QuizRound.findById(competition.quizRound || undefined).select('status').lean() || await QuizRound.findOne({ roundNumber: 1 }).select('status').lean();
     if (round?.status !== 'ended') return res.status(409).json({ error: 'End the MCQ round before publishing results' });
   } else if (!competition.schedule?.isEnded) {
     return res.status(409).json({ error: 'End the Prompt Rush competition before publishing results' });
@@ -98,7 +112,8 @@ router.post('/:id/publish-results', asyncHandler(async (req, res) => {
 
   let winners = [];
   if (competition.type === 'mcq') {
-    const top = await Attempt.find({ roundNumber: 1, status: 'completed' }).populate('student', 'name rollNumber').populate('department', 'name').sort({ score: -1, timeTakenSeconds: 1 }).limit(5).lean();
+    const roundId = competition.quizRound || (await QuizRound.findOne({ roundNumber: 1 }).select('_id').lean())?._id;
+    const top = await Attempt.find({ round: roundId, status: 'completed' }).populate('student', 'name rollNumber').populate('department', 'name').sort({ score: -1, timeTakenSeconds: 1 }).limit(5).lean();
     winners = top.map((row, index) => ({
       name: row.student?.name,
       rollNumber: row.student?.rollNumber,

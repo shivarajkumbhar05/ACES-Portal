@@ -6,6 +6,7 @@ const Admin = require('../../models/Admin');
 const Competition = require('../../models/Competition');
 const AttendanceAssignment = require('../../models/AttendanceAssignment');
 const AuditLog = require('../../models/AuditLog');
+const JudgingScore = require('../../models/JudgingScore');
 const { requireAdmin, requireRoles } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { ADMIN_ROLES, COMPETITION_TYPES } = require('../../config/constants');
@@ -45,6 +46,13 @@ router.put('/assignments', asyncHandler(async (req, res) => {
   if (!competition || !volunteer) return res.status(400).json({ error: 'Competition or volunteer not found' });
   if (competition.type === COMPETITION_TYPES.PROMPT_RUSH && (judges.length !== 2 || new Set(judgeIds.map(String)).size !== 2)) {
     return res.status(400).json({ error: 'Prompt Rush allocations require exactly two different active judges' });
+  }
+  if (competition.type === COMPETITION_TYPES.PROMPT_RUSH && studentIds.length) {
+    const existingScores = await JudgingScore.find({ competition: competitionId, student: { $in: studentIds } }).select('judge').lean();
+    const judgeSet = new Set(judgeIds.map(String));
+    if (existingScores.some((score) => !judgeSet.has(String(score.judge)))) {
+      return res.status(409).json({ error: 'Judge allocation cannot change after a participant has received a score' });
+    }
   }
   const operations = studentIds.map((student) => ({
     updateOne: {

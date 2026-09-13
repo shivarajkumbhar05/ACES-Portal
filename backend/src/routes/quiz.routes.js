@@ -13,6 +13,8 @@ const { shuffle, sampleRandom } = require('../utils/shuffle');
 const { finalizeAttemptScore } = require('../services/scoring.service');
 const { isQualifiedForRound } = require('../services/qualification.service');
 const { ROUND_STATUS, ATTEMPT_STATUS } = require('../config/constants');
+const Competition = require('../models/Competition');
+const { getCompetitionLifecycleError } = require('../utils/competitionLifecycle');
 
 const router = express.Router();
 
@@ -84,6 +86,9 @@ router.post(
     if (quizRound.status !== ROUND_STATUS.ACTIVE) {
       return res.status(403).json({ error: `Round ${round} is not currently active` });
     }
+    const competition = await Competition.findOne({ type: 'mcq', $or: [{ quizRound: quizRound._id }, { quizRound: null }, { quizRound: { $exists: false } }] }).lean();
+    const lifecycleError = getCompetitionLifecycleError(competition);
+    if (lifecycleError) return res.status(403).json({ error: 'competition_unavailable', message: lifecycleError });
 
     const codeOk = await quizRound.verifyExamCode(examCode);
     if (!codeOk) return res.status(401).json({ error: 'Invalid exam code' });

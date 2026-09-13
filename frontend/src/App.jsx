@@ -68,7 +68,7 @@ export default function App() {
             <Route path="schedules" element={<ProtectedRoute requireSuperAdmin><Schedules /></ProtectedRoute>} />
             <Route path="judging" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'judge']}><Judging /></ProtectedRoute>} />
             <Route path="judging-review" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><JudgingReview /></ProtectedRoute>} />
-            <Route path="publication" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><Publication /></ProtectedRoute>} />
+            <Route path="publication" element={<ProtectedRoute requireSuperAdmin><Publication /></ProtectedRoute>} />
             <Route path="attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'volunteer']}><Attendance /></ProtectedRoute>} />
           </Route>
 

@@ -3,6 +3,8 @@ const Student = require('../models/Student');
 const QuizRound = require('../models/QuizRound');
 const Attendance = require('../models/Attendance');
 const AttendanceAssignment = require('../models/AttendanceAssignment');
+const Competition = require('../models/Competition');
+const { getCompetitionLifecycleError } = require('../utils/competitionLifecycle');
 const { requireAdmin, requireRoles } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { ADMIN_ROLES } = require('../config/constants');
@@ -37,6 +39,9 @@ router.put('/', asyncHandler(async (req, res) => {
   const { studentId, roundNumber, competitionId, phoneNumber, present = true } = req.body;
   const round = await QuizRound.findOne({ roundNumber: Number(roundNumber) });
   const student = await Student.findById(studentId);
+  const competition = competitionId ? await Competition.findById(competitionId) : null;
+  if (competitionId && !competition) return res.status(400).json({ error: 'Competition not found' });
+  if (competition && getCompetitionLifecycleError(competition)) return res.status(403).json({ error: 'competition_unavailable', message: getCompetitionLifecycleError(competition) });
   if (!round || !student || !String(phoneNumber || '').trim()) {
     return res.status(400).json({ error: 'Participant, round, and phone number are required' });
   }
@@ -59,6 +64,9 @@ router.put('/', asyncHandler(async (req, res) => {
 router.get('/check-in/:token', asyncHandler(async (req, res) => {
   const assignment = await AttendanceAssignment.findOne({ checkInToken: req.params.token }).populate('student', 'name rollNumber').populate('competition', 'name schedule');
   if (!assignment) return res.status(404).json({ error: 'Check-in code is invalid or expired' });
+  const competition = await Competition.findById(assignment.competition?._id || assignment.competition);
+  const lifecycleError = getCompetitionLifecycleError(competition);
+  if (lifecycleError) return res.status(403).json({ error: 'competition_unavailable', message: lifecycleError });
   const now = new Date();
   const startsAt = assignment.competition?.schedule?.startsAt;
   assignment.status = 'checked_in';

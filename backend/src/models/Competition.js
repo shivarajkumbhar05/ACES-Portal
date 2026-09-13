@@ -13,6 +13,7 @@ const competitionSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 160 },
     type: { type: String, enum: Object.values(COMPETITION_TYPES), required: true, unique: true },
+    quizRound: { type: Schema.Types.ObjectId, ref: 'QuizRound', default: null },
     description: { type: String, trim: true, maxlength: 1000, default: '' },
     date: { type: Date },
     venue: { type: String, trim: true, maxlength: 240, default: '' },
