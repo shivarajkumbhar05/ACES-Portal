@@ -1,6 +1,7 @@
 const express = require('express');
 const Competition = require('../../models/Competition');
 const QuizRound = require('../../models/QuizRound');
+const Attempt = require('../../models/Attempt');
 const AttendanceAssignment = require('../../models/AttendanceAssignment');
 const JudgingScore = require('../../models/JudgingScore');
 const AuditLog = require('../../models/AuditLog');
@@ -32,6 +33,21 @@ router.patch('/:id', asyncHandler(async (req, res) => {
   const competition = await Competition.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
   if (!competition) return res.status(404).json({ error: 'Competition not found' });
   res.json(competition);
+}));
+
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const competition = await Competition.findById(req.params.id);
+  if (!competition) return res.status(404).json({ error: 'Competition not found' });
+  if (competition.resultsPublished) return res.status(409).json({ error: 'Published competitions cannot be deleted' });
+  const [assignments, scores, attempts] = await Promise.all([
+    AttendanceAssignment.countDocuments({ competition: competition._id }),
+    JudgingScore.countDocuments({ competition: competition._id }),
+    competition.type === 'mcq' ? Attempt.countDocuments({ roundNumber: 1 }) : Promise.resolve(0)
+  ]);
+  if (assignments || scores || attempts) return res.status(409).json({ error: 'This competition has participation data and cannot be deleted' });
+  await Competition.deleteOne({ _id: competition._id });
+  await AuditLog.create({ admin: req.admin._id, action: 'competition.deleted', details: { competitionId: competition._id, type: competition.type }, ipAddress: req.ip });
+  res.json({ ok: true });
 }));
 
 router.post('/:id/pause', asyncHandler(async (req, res) => {

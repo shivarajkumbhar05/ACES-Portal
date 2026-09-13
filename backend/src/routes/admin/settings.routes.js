@@ -88,8 +88,8 @@ router.put(
         }
       });
     if (errors.length) return res.status(400).json({ error: 'Invalid round settings', details: errors });
-    if (type !== undefined && !Object.values(ROUND_TYPES).includes(type)) {
-      return res.status(400).json({ error: 'type must be a supported round type' });
+    if (type !== undefined && type !== ROUND_TYPES.QUIZ) {
+      return res.status(400).json({ error: 'Quiz rounds support only the MCQ format' });
     }
 
     let round = await QuizRound.findOne({ roundNumber });
@@ -118,7 +118,7 @@ router.put(
     if (showScoreToStudent !== undefined) round.showScoreToStudent = showScoreToStudent;
     if (showLeaderboardToStudents !== undefined) round.showLeaderboardToStudents = showLeaderboardToStudents;
     if (participantLimit !== undefined) round.participantLimit = participantLimit === null ? null : parsedNumbers.participantLimit;
-    if (type !== undefined) round.type = type;
+    round.type = ROUND_TYPES.QUIZ;
 
     await round.save();
 
